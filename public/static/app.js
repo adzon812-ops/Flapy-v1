@@ -1,767 +1,606 @@
-// ============================================================
-// FLAPY — Main Application JavaScript
-// ============================================================
+/* FLAPY — app.js */
+'use strict';
 
-let currentUser = null;
-let listings = [];
-let currentLang = 'ru';
-let currentRole = 'buyer';
-let calendarEvents = [];
-let activeFilter = 'all';
+var listings = [];
+var calEvents = [];
+var curUser = null;
+var curRole = 'buyer';
+var curFilter = 'all';
+var curLang = 'ru';
 
-// ============================================================
-// INIT
-// ============================================================
-window.addEventListener('load', async () => {
-  await new Promise(r => setTimeout(r, 1200));
-  document.getElementById('loader').style.display = 'none';
+/* ── BOOT ───────────────────────────────────── */
+window.addEventListener('load', function () {
+  var saved = localStorage.getItem('flapy_user');
+  if (saved) { try { curUser = JSON.parse(saved); } catch(e){} renderAuthSlot(); }
 
-  const seen = localStorage.getItem('flapy_onboarded');
-  if (!seen) {
-    document.getElementById('onboarding').style.display = 'flex';
-  } else {
-    initApp();
-  }
+  var th = localStorage.getItem('flapy_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', th);
+  updateThemeIcon(th);
 
-  const saved = localStorage.getItem('flapy_user');
-  if (saved) {
-    currentUser = JSON.parse(saved);
-    updateAuthUI();
-  }
-
-  const theme = localStorage.getItem('flapy_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  updateThemeIcon(theme);
+  setTimeout(function () {
+    var ld = document.getElementById('loader');
+    ld.style.opacity = '0';
+    setTimeout(function () { ld.style.display = 'none'; }, 380);
+    fetchListings();
+    initCalendar();
+  }, 1300);
 });
 
-async function initApp() {
-  try {
-    const res = await fetch('/api/listings');
-    const data = await res.json();
-    listings = data.listings;
-  } catch(e) {
-    listings = getMockListings();
-  }
-  renderFeed();
-  renderSearch(listings);
-  loadCalendar();
-  renderProfile();
+/* ── DATA ───────────────────────────────────── */
+function fetchListings() {
+  fetch('/api/listings')
+    .then(function (r) { return r.json(); })
+    .then(function (d) { listings = d.listings || []; renderFeed(); renderSearch(listings); })
+    .catch(function () { listings = fallbackListings(); renderFeed(); renderSearch(listings); });
 }
 
-function finishOnboarding() {
-  localStorage.setItem('flapy_onboarded', '1');
-  document.getElementById('onboarding').style.display = 'none';
-  initApp();
-}
-
-// ============================================================
-// MOCK DATA (fallback)
-// ============================================================
-function getMockListings() {
+function fallbackListings() {
   return [
-    { id: 1, type: 'apartment', rooms: 3, area: 85, district: 'Есиль', price: 85000000, exchange: false, media: 'photo', realtorName: 'Айгерим К.', realtorRating: 4.9, realtorId: 'r1', liked: false, description: '🏢 Просторная 3-комнатная квартира 85 м² в Есиле!\n\n🌟 Преимущества:\n• Панорамный вид на Байтерек\n• Свежий ремонт, подземный паркинг\n\n💰 Цена: 85 000 000 ₸', tags: ['новострой', 'ипотека'], color: '#6C63FF' },
-    { id: 2, type: 'house', rooms: 5, area: 220, district: 'Алматинский', price: 150000000, exchange: true, media: 'video', realtorName: 'Данияр М.', realtorRating: 4.7, realtorId: 'r2', liked: false, description: '🏡 Роскошный дом 220 м² в Алматинском районе!\n🔄 Рассмотрим обмен!\n\n🌟 Особенности:\n• Участок 10 соток\n• Гараж на 2 машины, баня и беседка\n\n💰 Цена: 150 000 000 ₸', tags: ['обмен', 'срочно'], color: '#FF6584' },
-    { id: 3, type: 'commercial', rooms: null, area: 120, district: 'Байконыр', price: 65000000, exchange: false, media: 'photo', realtorName: 'Сауле Т.', realtorRating: 5.0, realtorId: 'r3', liked: false, description: '🏪 Коммерческое помещение 120 м² в Байконыре!\n\n🌟 Идеально для ресторана, офиса или магазина\n\n🚶 Высокий трафик, первая линия!\n💰 Цена: 65 000 000 ₸', tags: ['инвестиция', 'аренда'], color: '#43C6AC' },
-    { id: 4, type: 'apartment', rooms: 2, area: 65, district: 'Сарыарка', price: 38000000, exchange: true, media: 'photo', realtorName: 'Нурлан А.', realtorRating: 4.6, realtorId: 'r4', liked: false, description: '🏢 Уютная 2-комнатная 65 м² в Сарыарке!\n🔄 Обмен рассмотрим!\n\n🌟 Плюсы:\n• Рядом школа и детсад\n• Тихий двор\n\n💰 Цена: 38 000 000 ₸', tags: ['обмен', 'ипотека'], color: '#F7971E' },
-    { id: 5, type: 'apartment', rooms: 1, area: 42, district: 'Есиль', price: 29000000, exchange: false, media: 'video', realtorName: 'Айгерим К.', realtorRating: 4.9, realtorId: 'r1', liked: false, description: '🏢 Стильная 1-комнатная 42 м² в Есиле!\n\n🌟 Особенности:\n• Смарт-дизайн, встроенная кухня\n• Вид на город\n\n💰 Цена: 29 000 000 ₸', tags: ['студия', 'инвестиция'], color: '#6C63FF' },
+    { id:1, type:'apartment', rooms:3, area:85,  district:'Есиль',       price:85000000,  exchange:false, hasVideo:false, realtor:'Айгерим К.',  rating:4.9, color:'#7c6ff7', tags:['Новострой','Ипотека'], desc:'Просторная 3-комнатная с панорамным видом на Байтерек. Свежий ремонт, подземный паркинг.' },
+    { id:2, type:'house',     rooms:5, area:220, district:'Алматинский', price:150000000, exchange:true,  hasVideo:true,  realtor:'Данияр М.',    rating:4.7, color:'#ff5c7c', tags:['Обмен','Срочно'],      desc:'Просторный дом с участком 10 соток. Гараж на 2 машины, баня. Рассмотрим обмен!' },
+    { id:3, type:'commercial',rooms:0, area:120, district:'Байконыр',    price:65000000,  exchange:false, hasVideo:false, realtor:'Сауле Т.',     rating:5.0, color:'#3ecfac', tags:['Инвестиция'],          desc:'Помещение первой линии с высоким трафиком. Идеально для ресторана или офиса.' },
+    { id:4, type:'apartment', rooms:2, area:65,  district:'Сарыарка',    price:38000000,  exchange:true,  hasVideo:false, realtor:'Нурлан А.',    rating:4.6, color:'#ffab30', tags:['Обмен','Ипотека'],     desc:'Уютная 2-комнатная в тихом дворе. Рядом школа и детский сад. Рассмотрим обмен!' },
+    { id:5, type:'apartment', rooms:1, area:42,  district:'Есиль',       price:29000000,  exchange:false, hasVideo:true,  realtor:'Айгерим К.',   rating:4.9, color:'#7c6ff7', tags:['Студия'],              desc:'Стильная студия со смарт-дизайном. Встроенная кухня, вид на ночной город.' },
   ];
 }
 
-// ============================================================
-// FEED
-// ============================================================
-function renderFeed(data) {
-  const feed = document.getElementById('feed-screen');
-  const items = data || listings;
-  feed.innerHTML = items.map((l, i) => buildFeedCard(l, i)).join('');
+/* ── FEED ───────────────────────────────────── */
+var EM = { apartment:'🏢', house:'🏡', commercial:'🏪', land:'🌳' };
+
+function renderFeed() {
+  var feed = document.getElementById('s-feed');
+  if (!feed) return;
+  feed.innerHTML = listings.map(buildCard).join('');
 }
 
-function getTypeEmoji(type) {
-  const map = { apartment: '🏢', house: '🏡', commercial: '🏪', land: '🌳' };
-  return map[type] || '🏠';
-}
-function getTypeLabel(type) {
-  const map = { apartment: 'Квартира', house: 'Дом', commercial: 'Коммерция', land: 'Участок' };
-  return map[type] || type;
-}
+function buildCard(l) {
+  var em  = EM[l.type] || '🏠';
+  var pr  = l.price ? (l.price / 1e6).toFixed(1) + ' млн ₸' : 'по договору';
+  var rm  = l.rooms ? l.rooms + 'к · ' : '';
+  var ar  = l.area  ? l.area + ' м²' : '';
+  var ini = (l.realtor || 'R').charAt(0);
+  var bg  = l.color + '18';
 
-function buildFeedCard(l, i) {
-  const typeLabel = getTypeLabel(l.type);
-  const typeEmoji = getTypeEmoji(l.type);
-  const priceFormatted = l.price ? (l.price / 1000000).toFixed(1) + ' млн ₸' : 'по договору';
-  const rooms = l.rooms ? l.rooms + ' комн.' : '';
-  const area = l.area ? l.area + ' м²' : '';
-
-  const tagBadges = (l.tags || []).map(function(t) {
-    let cls = 'feed-tag';
-    if (t === 'обмен' || t === 'exchange') cls += ' exchange';
-    if (t === 'срочно') cls += ' urgent';
-    return '<span class="' + cls + '">' + t + '</span>';
+  var tags = (l.tags || []).map(function (t) {
+    var cls = t === 'Обмен' ? ' x' : t === 'Срочно' ? ' u' : '';
+    return '<span class="fc-tag' + cls + '">' + t + '</span>';
   }).join('');
 
-  const mediaBadge = l.media === 'video'
-    ? '<div class="media-badge"><i class="fas fa-play-circle"></i> Видео</div>'
-    : '';
-  const exchangeRibbon = l.exchange
-    ? '<div class="exchange-ribbon">🔄 Обмен</div>'
-    : '';
-  const realtorInitial = (l.realtorName || 'R').charAt(0);
-  const starsCount = Math.floor(l.realtorRating || 5);
-  const stars = '★'.repeat(starsCount);
-  const likeClass = l.liked ? 'feed-action-btn liked' : 'feed-action-btn';
-  const heartIcon = l.liked ? 'fas fa-heart' : 'far fa-heart';
-  const likeCount = l.liked ? 1 : 0;
-  const descFormatted = (l.description || '').replace(/\n/g, '<br>');
+  var videoBadge = l.hasVideo
+    ? '<div class="fc-badge-video"><i class="fas fa-play-circle"></i> Видео</div>' : '';
+  var exchBadge = l.exchange
+    ? '<div class="fc-badge-exch">🔄 Обмен</div>' : '';
 
-  return '<div class="feed-card" id="card-' + l.id + '" style="background:' + l.color + '18">' +
-    '<div class="feed-bg">' + typeEmoji + '</div>' +
-    '<div class="feed-gradient"></div>' +
-    mediaBadge +
-    exchangeRibbon +
-    '<div class="feed-actions">' +
-      '<button class="' + likeClass + '" onclick="toggleLike(' + l.id + ', this)" id="like-' + l.id + '">' +
-        '<i class="' + heartIcon + '"></i>' +
-        '<span class="feed-action-count">' + likeCount + '</span>' +
-      '</button>' +
-      '<button class="feed-action-btn" onclick="openDetail(' + l.id + ')">' +
-        '<i class="fas fa-expand-alt"></i>' +
-        '<span class="feed-action-count">Детали</span>' +
-      '</button>' +
-      '<button class="feed-action-btn" onclick="openChat(' + l.id + ')">' +
-        '<i class="fas fa-comment"></i>' +
-        '<span class="feed-action-count">Чат</span>' +
-      '</button>' +
-      '<button class="feed-action-btn" onclick="callRealtor(\'' + l.realtorName + '\')">' +
-        '<i class="fas fa-phone"></i>' +
-        '<span class="feed-action-count">Звонок</span>' +
-      '</button>' +
-    '</div>' +
-    '<div class="feed-content">' +
-      '<div class="feed-tag-row">' + tagBadges + '</div>' +
-      '<div class="feed-type-badge">' + typeEmoji + ' ' + typeLabel + ' · ' + rooms + ' ' + area + '</div>' +
-      '<div class="feed-title">' + (l.district || 'Астана') + '</div>' +
-      '<div class="feed-price">' + priceFormatted + '</div>' +
-      '<div class="feed-desc">' + descFormatted + '</div>' +
-      '<div class="feed-realtor">' +
-        '<div class="realtor-ava">' + realtorInitial + '</div>' +
-        '<div class="realtor-info">' +
-          '<div class="realtor-name">' + (l.realtorName || 'Риэлтор') + '</div>' +
-          '<div class="realtor-stars">' + stars + ' ' + l.realtorRating + '</div>' +
+  var hrtCls = l.liked ? 'fc-act-btn liked' : 's-ico';
+  var hrtIco = l.liked ? 'fas fa-heart' : 'far fa-heart';
+
+  return (
+    '<div class="fcard" style="background:' + bg + '">' +
+      '<div class="fc-bg-layer">' + em + '</div>' +
+      '<div class="fc-overlay"></div>' +
+      videoBadge + exchBadge +
+
+      /* right side buttons */
+      '<div class="fc-side">' +
+        '<div class="side-btn">' +
+          '<button class="s-ico' + (l.liked ? ' liked' : '') + '" id="hrt-' + l.id + '" onclick="toggleLike(' + l.id + ',this)">' +
+            '<i class="' + hrtIco + '"></i>' +
+          '</button>' +
+          '<span class="s-lbl">' + (l.liked ? '1' : '0') + '</span>' +
         '</div>' +
-        '<button class="btn-outline" style="padding:6px 14px;font-size:12px" onclick="openRatingModal()">Профиль</button>' +
+        '<div class="side-btn">' +
+          '<button class="s-ico" onclick="openDetail(' + l.id + ')"><i class="fas fa-expand-alt"></i></button>' +
+          '<span class="s-lbl">Детали</span>' +
+        '</div>' +
+        '<div class="side-btn">' +
+          '<button class="s-ico" onclick="goChat(' + l.id + ')"><i class="fas fa-comment"></i></button>' +
+          '<span class="s-lbl">Чат</span>' +
+        '</div>' +
+        '<div class="side-btn">' +
+          '<button class="s-ico" onclick="toast(\'📞 Звонок: ' + l.realtor + '\')"><i class="fas fa-phone"></i></button>' +
+          '<span class="s-lbl">Звонок</span>' +
+        '</div>' +
       '</div>' +
-    '</div>' +
-  '</div>';
+
+      /* bottom info */
+      '<div class="fc-info">' +
+        '<div class="fc-tags">' + tags + '</div>' +
+        '<div class="fc-loc"><i class="fas fa-map-marker-alt"></i>' + l.district + '</div>' +
+        '<div class="fc-title">' + rm + ar + '</div>' +
+        '<div class="fc-price">' + pr + '</div>' +
+        '<div class="fc-desc">' + (l.desc || '') + '</div>' +
+        '<div class="fc-realtor">' +
+          '<div class="fc-ava" style="background:' + l.color + '">' + ini + '</div>' +
+          '<div>' +
+            '<div class="fc-rname">' + l.realtor + '</div>' +
+            '<div class="fc-rstar">★ ' + l.rating + '</div>' +
+          '</div>' +
+          '<button class="fc-more" onclick="openDetail(' + l.id + ')">Подробнее</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
 }
 
 function toggleLike(id, btn) {
-  const l = listings.find(function(x) { return x.id === id; });
+  var l = listings.find(function (x) { return x.id === id; });
   if (!l) return;
   l.liked = !l.liked;
-  const heartIcon = l.liked ? 'fas fa-heart' : 'far fa-heart';
-  btn.innerHTML = '<i class="' + heartIcon + '"></i><span class="feed-action-count">' + (l.liked ? 1 : 0) + '</span>';
+  btn.innerHTML = '<i class="' + (l.liked ? 'fas' : 'far') + ' fa-heart"></i>';
   if (l.liked) btn.classList.add('liked'); else btn.classList.remove('liked');
-  showToast(l.liked ? '❤️ Добавлено в избранное' : '💔 Убрано из избранного');
+  var lbl = btn.parentNode.nextElementSibling;
+  if (lbl) lbl.textContent = l.liked ? '1' : '0';
+  toast(l.liked ? '❤️ В избранное' : '💔 Убрано');
 }
 
 function openDetail(id) {
-  const l = listings.find(function(x) { return x.id === id; });
+  var l = listings.find(function (x) { return x.id === id; });
   if (!l) return;
-  const typeEmoji = getTypeEmoji(l.type);
-  const sheet = document.getElementById('detail-modal-sheet');
-  const priceText = l.price ? (l.price / 1000000).toFixed(1) + ' млн ₸' : 'По договору';
-  const exchangeHtml = l.exchange ? '<div class="detail-exchange"><i class="fas fa-exchange-alt"></i> Обмен</div>' : '';
-  const roomsHtml = l.rooms ? '<div class="detail-info-item"><div class="detail-info-val">' + l.rooms + 'к</div><div class="detail-info-lbl">Комнаты</div></div>' : '';
-  const areaHtml = l.area ? '<div class="detail-info-item"><div class="detail-info-val">' + l.area + '</div><div class="detail-info-lbl">Площадь м²</div></div>' : '';
-  const descFormatted = (l.description || '').replace(/\n/g, '<br>');
+  var em  = EM[l.type] || '🏠';
+  var pr  = l.price ? (l.price / 1e6).toFixed(1) + ' млн ₸' : 'По договору';
+  var rmH = l.rooms ? '<div class="det-cell"><div class="det-val">' + l.rooms + 'к</div><div class="det-lbl">Комнаты</div></div>' : '';
+  var arH = l.area  ? '<div class="det-cell"><div class="det-val">' + l.area + '</div><div class="det-lbl">Площадь м²</div></div>' : '';
+  var exch = l.exchange ? '<div style="font-size:12px;color:var(--acc2);display:flex;align-items:center;gap:4px;padding:0 18px 8px"><i class="fas fa-exchange-alt"></i> Рассмотрим обмен</div>' : '';
 
-  sheet.innerHTML =
-    '<div class="modal-handle"></div>' +
-    '<div class="detail-img" style="background:' + l.color + '22">' + typeEmoji + '</div>' +
-    '<div class="detail-price-row">' +
-      '<div class="detail-price">' + priceText + '</div>' +
-      exchangeHtml +
+  document.getElementById('m-det-body').innerHTML =
+    '<div class="sh-hnd"></div>' +
+    '<div class="det-vis" style="background:' + l.color + '14">' + em + '</div>' +
+    '<div class="det-price">' + pr + '</div>' +
+    exch +
+    '<div class="det-grid">' +
+      rmH + arH +
+      '<div class="det-cell"><div class="det-val">' + l.district + '</div><div class="det-lbl">Район</div></div>' +
+      '<div class="det-cell"><div class="det-val">⭐ ' + l.rating + '</div><div class="det-lbl">Рейтинг</div></div>' +
     '</div>' +
-    '<div class="detail-info-grid">' +
-      roomsHtml + areaHtml +
-      '<div class="detail-info-item"><div class="detail-info-val">' + (l.district || 'Астана') + '</div><div class="detail-info-lbl">Район</div></div>' +
-      '<div class="detail-info-item"><div class="detail-info-val">⭐ ' + l.realtorRating + '</div><div class="detail-info-lbl">Рейтинг</div></div>' +
-    '</div>' +
-    '<div class="detail-desc">' + descFormatted + '</div>' +
-    '<div class="detail-cta">' +
-      '<button class="cta-call" onclick="callRealtor(\'' + l.realtorName + '\')"><i class="fas fa-phone"></i> Позвонить</button>' +
-      '<button class="cta-chat" onclick="closeModal(\'detail-modal\');showScreen(\'flai-screen\');setNav(document.getElementById(\'nav-flai\'))"><i class="fas fa-comment"></i> Написать</button>' +
+    '<div class="det-desc">' + (l.desc || '').replace(/\n/g, '<br>') + '</div>' +
+    '<div class="det-cta">' +
+      '<button class="cta-c call" onclick="toast(\'📞 Звонок: ' + l.realtor + '\')"><i class="fas fa-phone"></i> Позвонить</button>' +
+      '<button class="cta-c chat" onclick="closeM(\'m-det\');go(\'s-flai\');nav(document.getElementById(\'n-flai\'))"><i class="fas fa-comment"></i> Написать</button>' +
     '</div>';
-  openModal('detail-modal');
+  openM('m-det');
 }
 
-function openChat(id) {
-  showScreen('flai-screen');
-  setNav(document.getElementById('nav-flai'));
-  const l = listings.find(function(x) { return x.id === id; });
-  if (l) showToast('💬 Открыт чат по объекту: ' + l.district);
+function goChat(id) {
+  var l = listings.find(function (x) { return x.id === id; });
+  go('s-flai');
+  nav(document.getElementById('n-flai'));
+  if (l) toast('💬 Чат по объекту: ' + l.district);
 }
 
-function callRealtor(name) {
-  showToast('📞 Звонок риэлтору ' + name + '...');
-}
-
-// ============================================================
-// SEARCH
-// ============================================================
-function setFilter(el, filter) {
-  document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
-  el.classList.add('active');
-  activeFilter = filter;
+/* ── SEARCH ─────────────────────────────────── */
+function setChip(el, filter) {
+  document.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('on'); });
+  el.classList.add('on');
+  curFilter = filter;
   doSearch();
 }
 
 function doSearch() {
-  const searchEl = document.getElementById('search-input');
-  const q = searchEl ? searchEl.value.toLowerCase() : '';
-  let results = listings.slice();
-
-  if (activeFilter && activeFilter !== 'all') {
-    if (activeFilter === 'exchange') {
-      results = results.filter(function(l) { return l.exchange; });
-    } else if (activeFilter === 'video') {
-      results = results.filter(function(l) { return l.media === 'video'; });
-    } else if (['apartment','house','commercial','land'].indexOf(activeFilter) >= 0) {
-      results = results.filter(function(l) { return l.type === activeFilter; });
-    } else {
-      results = results.filter(function(l) {
-        return (l.district || '').toLowerCase().indexOf(activeFilter.toLowerCase()) >= 0;
-      });
-    }
-  }
-
-  if (q) {
-    results = results.filter(function(l) {
-      return (l.district || '').toLowerCase().indexOf(q) >= 0 ||
-        (l.description || '').toLowerCase().indexOf(q) >= 0 ||
-        (l.realtorName || '').toLowerCase().indexOf(q) >= 0 ||
-        (l.tags || []).some(function(t) { return t.toLowerCase().indexOf(q) >= 0; });
-    });
-  }
-  renderSearch(results);
+  var q = ((document.getElementById('srch-in') || {}).value || '').toLowerCase().trim();
+  var res = listings.slice();
+  if (curFilter === 'exchange') res = res.filter(function (l) { return l.exchange; });
+  else if (curFilter === 'video') res = res.filter(function (l) { return l.hasVideo; });
+  else if (curFilter !== 'all') res = res.filter(function (l) { return l.type === curFilter; });
+  if (q) res = res.filter(function (l) {
+    return (l.district || '').toLowerCase().indexOf(q) >= 0 ||
+           (l.realtor  || '').toLowerCase().indexOf(q) >= 0 ||
+           (l.tags || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; });
+  });
+  renderSearch(res);
 }
 
-function renderSearch(results) {
-  const el = document.getElementById('search-results');
+function renderSearch(res) {
+  var el = document.getElementById('srch-res');
   if (!el) return;
-  if (!results.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Ничего не найдено</div><div class="empty-sub">Попробуйте другой запрос</div></div>';
+  if (!res.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">Ничего не найдено</div><div class="empty-s">Попробуйте другой запрос</div></div>';
     return;
   }
-  el.innerHTML = results.map(function(l) {
-    const typeEmoji = getTypeEmoji(l.type);
-    const priceText = l.price ? (l.price / 1000000).toFixed(1) + ' млн ₸' : '—';
-    const roomsText = l.rooms ? l.rooms + 'к · ' : '';
-    const exchangeIcon = l.exchange ? ' · 🔄' : '';
-    return '<div class="rating-card" style="cursor:pointer;margin-bottom:10px" onclick="openDetail(' + l.id + ')">' +
-      '<div style="width:54px;height:54px;border-radius:16px;background:' + l.color + '33;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">' + typeEmoji + '</div>' +
-      '<div style="flex:1">' +
-        '<div style="font-size:15px;font-weight:700">' + roomsText + l.area + 'м² · ' + l.district + '</div>' +
-        '<div style="font-size:13px;color:var(--accent4);font-weight:700;margin:2px 0">' + priceText + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted)">' + l.realtorName + ' · ⭐ ' + l.realtorRating + exchangeIcon + '</div>' +
-      '</div>' +
-      '<i class="fas fa-chevron-right" style="color:var(--text-muted)"></i>' +
-    '</div>';
+  el.innerHTML = res.map(function (l) {
+    var em = EM[l.type] || '🏠';
+    var pr = l.price ? (l.price / 1e6).toFixed(1) + ' млн ₸' : '—';
+    var rm = l.rooms ? l.rooms + 'к · ' : '';
+    var ex = l.exchange ? ' · 🔄' : '';
+    return (
+      '<div class="s-card su" onclick="openDetail(' + l.id + ')">' +
+        '<div class="s-ico-b" style="background:' + l.color + '20">' + em + '</div>' +
+        '<div class="s-inf">' +
+          '<div class="s-name">' + rm + l.area + ' м² · ' + l.district + '</div>' +
+          '<div class="s-price">' + pr + '</div>' +
+          '<div class="s-sub">' + l.realtor + ' · ⭐ ' + l.rating + ex + '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right" style="color:var(--t3);font-size:12px"></i>' +
+      '</div>'
+    );
   }).join('');
 }
 
-// ============================================================
-// AI DESCRIPTION
-// ============================================================
-async function generateAIDesc() {
-  const type = document.getElementById('add-type').value;
-  const rooms = document.getElementById('add-rooms').value;
-  const area = document.getElementById('add-area').value;
-  const district = document.getElementById('add-district').value;
-  const price = document.getElementById('add-price').value;
-  const exchange = document.getElementById('add-exchange').checked;
+/* ── AI ─────────────────────────────────────── */
+function genAI() {
+  var type  = (document.getElementById('a-type')     || {}).value || 'apartment';
+  var rooms = (document.getElementById('a-rooms')    || {}).value || '3';
+  var area  = (document.getElementById('a-area')     || {}).value || '';
+  var dist  = (document.getElementById('a-district') || {}).value || 'Есиль';
+  var price = (document.getElementById('a-price')    || {}).value || '';
+  var exch  = (document.getElementById('a-exch')     || {}).checked || false;
+  toast('🤖 Генерирую описание...');
+  fetch('/api/ai/describe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: type, rooms: rooms, area: area, district: dist, price: price, exchange: exch })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    var t = document.getElementById('ai-txt');
+    var w = document.getElementById('ai-box-wrap');
+    if (t) t.textContent = d.description;
+    if (w) w.style.display = 'block';
+  }).catch(function () { toast('⚠️ Ошибка генерации'); });
+}
 
-  showToast('🤖 AI генерирует описание...');
+function useAI() {
+  var txt = (document.getElementById('ai-txt') || {}).textContent || '';
+  var desc = document.getElementById('a-desc');
+  if (desc) desc.value = txt;
+  var w = document.getElementById('ai-box-wrap');
+  if (w) w.style.display = 'none';
+  toast('✅ Описание применено');
+}
 
-  try {
-    const res = await fetch('/api/ai/describe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, rooms, area, district, price, exchange })
-    });
-    const data = await res.json();
-    document.getElementById('ai-text').textContent = data.description;
-    document.getElementById('ai-preview').style.display = 'block';
-  } catch(e) {
-    showToast('⚠️ Ошибка генерации');
+function submitListing() {
+  toast('🚀 Объект опубликован!');
+  closeM('m-add');
+}
+
+/* ── CHAT FLAI ──────────────────────────────── */
+function setRole(role, btn) {
+  curRole = role;
+  document.querySelectorAll('#rt-buyer,#rt-realtor').forEach(function (b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+}
+
+function sendFlai() {
+  var inp = document.getElementById('flai-inp');
+  var txt = inp ? inp.value.trim() : '';
+  if (!txt) return;
+  if (inp) inp.value = '';
+  addMsg('flai-msgs', txt, true);
+  var typing = addTyping('flai-msgs');
+  fetch('/api/chat/flai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: txt, role: curRole })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    typing.remove();
+    addMsg('flai-msgs', d.reply, false, 'F');
+  }).catch(function () {
+    typing.remove();
+    addMsg('flai-msgs', 'Попробуйте снова 🙏', false, 'F');
+  });
+}
+
+/* ── CHAT AIRA ──────────────────────────────── */
+function sendAira() {
+  if (!curUser) { toast('🔐 Только для риэлторов'); openM('m-auth'); return; }
+  var inp = document.getElementById('aira-inp');
+  var txt = inp ? inp.value.trim() : '';
+  if (!txt) return;
+  if (inp) inp.value = '';
+  addMsg('aira-msgs', txt, true);
+  toast('✅ Отправлено в Aira');
+}
+
+function needAuthAira() {
+  if (!curUser) { toast('🔐 Только для риэлторов'); openM('m-auth'); }
+}
+
+function toggleThread(hd) {
+  var body = hd.nextElementSibling;
+  var ico  = hd.querySelector('.fa-chevron-down');
+  if (!body) return;
+  var open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (ico) ico.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+/* ── MSG HELPERS ─────────────────────────────── */
+function addMsg(cid, txt, mine, ini) {
+  var c = document.getElementById(cid);
+  if (!c) return;
+  var div = document.createElement('div');
+  div.className = 'msg su' + (mine ? ' me' : '');
+  var now = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  var fmt = txt.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>');
+  if (mine) {
+    div.innerHTML = '<div><div class="bubble">' + fmt + '</div><div class="m-time">' + now + '</div></div>';
+  } else {
+    div.innerHTML =
+      '<div class="m-ava">' + (ini || 'AI') + '</div>' +
+      '<div><div class="bubble">' + fmt + '</div><div class="m-time">' + now + '</div></div>';
   }
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+  return div;
 }
 
-function updateAIPreview(force) {
-  if (document.getElementById('ai-preview').style.display === 'block' || force) {
-    generateAIDesc();
-  }
+function addTyping(cid) {
+  var c = document.getElementById(cid);
+  if (!c) return { remove: function(){} };
+  var div = document.createElement('div');
+  div.className = 'msg';
+  div.innerHTML = '<div class="m-ava">F</div><div><div class="bubble" style="padding:7px 11px"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>';
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+  return div;
 }
 
-function useAIText() {
-  const text = document.getElementById('ai-text').textContent;
-  document.getElementById('add-desc').value = text;
-  document.getElementById('ai-preview').style.display = 'none';
-  showToast('✅ Описание применено');
+/* ── CALENDAR ───────────────────────────────── */
+function initCalendar() {
+  fetch('/api/calendar')
+    .then(function (r) { return r.json(); })
+    .then(function (d) { calEvents = d.events || []; renderCal(); })
+    .catch(function () { calEvents = fallbackCal(); renderCal(); });
 }
 
-async function submitListing() {
-  showToast('🚀 Объект опубликован!');
-  closeModal('add-listing-modal');
-  try {
-    const res = await fetch('/api/listings');
-    const data = await res.json();
-    listings = data.listings;
-  } catch(e) {}
-  renderFeed();
-  renderSearch(listings);
-}
-
-// ============================================================
-// CALENDAR
-// ============================================================
-async function loadCalendar() {
-  try {
-    const res = await fetch('/api/calendar');
-    const data = await res.json();
-    calendarEvents = data.events;
-  } catch(e) {
-    calendarEvents = getMockCalendar();
-  }
-  renderCalendar();
-}
-
-function getMockCalendar() {
-  const today = new Date();
+function fallbackCal() {
+  var t = new Date();
+  function dt(d, h, m) { return new Date(t.getFullYear(), t.getMonth(), t.getDate() + d, h, m).toISOString(); }
   return [
-    { id: 1, title: '🏠 Показ квартиры — Есиль', time: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0).toISOString(), type: 'showing', client: 'Алия С.', note: 'Взять ключи заранее' },
-    { id: 2, title: '📞 Звонок клиенту', time: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 30).toISOString(), type: 'call', client: 'Данияр М.', note: 'Обсудить условия' },
-    { id: 3, title: '✍️ Подписание договора', time: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 11, 0).toISOString(), type: 'deal', client: 'Нурсулу К.', note: 'Проверить документы заранее' },
-    { id: 4, title: '🏢 Показ коммерции — Байконыр', time: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 15, 0).toISOString(), type: 'showing', client: 'Бизнес-клиент', note: 'Взять план помещения' },
+    { id:1, title:'🏠 Показ квартиры', time:dt(0,10,0),  type:'showing', client:'Алия С.',       note:'Взять ключи' },
+    { id:2, title:'📞 Звонок клиенту', time:dt(0,14,30), type:'call',    client:'Данияр М.',      note:'Обсудить условия' },
+    { id:3, title:'✍️ Подписание',     time:dt(1,11,0),  type:'deal',    client:'Нурсулу К.',     note:'Проверить документы' },
+    { id:4, title:'🏢 Показ коммерции',time:dt(1,15,0),  type:'showing', client:'Бизнес-клиент',  note:'Взять план' },
   ];
 }
 
-function renderCalendar() {
-  const el = document.getElementById('calendar-content');
+function renderCal() {
+  var el = document.getElementById('cal-body');
   if (!el) return;
-  const today = new Date();
-  const todayStr = today.toLocaleDateString('ru', { weekday: 'long', day: 'numeric', month: 'long' });
-  const typeColors = { showing: '#6C63FF', call: '#43C6AC', deal: '#FF6584', meeting: '#F7971E' };
+  var today  = new Date();
+  var tom    = new Date(today); tom.setDate(tom.getDate() + 1);
+  var dateStr = today.toLocaleDateString('ru', { weekday:'long', day:'numeric', month:'long' });
 
-  function sameDay(d1, d2) {
-    return d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+  function sameDay(a, b) {
+    return a.getDate()===b.getDate() && a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear();
+  }
+  var todayEv = calEvents.filter(function (e) { return sameDay(new Date(e.time), today); });
+  var tomEv   = calEvents.filter(function (e) { return sameDay(new Date(e.time), tom);   });
+  var colors  = { showing:'#7c6ff7', call:'#3ecfac', deal:'#ff5c7c', meeting:'#ffab30' };
+
+  function evHtml(e) {
+    var d  = new Date(e.time);
+    var hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    var cl = colors[e.type] || '#7c6ff7';
+    return (
+      '<div class="ev-card">' +
+        '<div class="ev-time"><div class="ev-hm">' + hm + '</div></div>' +
+        '<div class="ev-line" style="background:' + cl + '"></div>' +
+        '<div class="ev-inf">' +
+          '<div class="ev-ttl">' + e.title + '</div>' +
+          (e.client ? '<div class="ev-cli">👤 ' + e.client + '</div>' : '') +
+          (e.note   ? '<div class="ev-note">💭 ' + e.note + '</div>' : '') +
+        '</div>' +
+      '</div>'
+    );
   }
 
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  var html =
+    '<div class="cal-title">📅 Расписание</div>' +
+    '<div class="cal-date">' + dateStr + '</div>' +
+    '<div class="info-banner" style="margin-bottom:12px"><span class="ib-ico">🤖</span><span><b>Flai:</b> Показ сегодня в 10:00. Удачи! ✨</span></div>' +
+    '<button class="add-btn" onclick="needAuth(function(){openM(\'m-ev\')})"><i class="fas fa-plus"></i> Добавить событие</button>';
 
-  const todayEvents = calendarEvents.filter(function(e) { return sameDay(new Date(e.time), today); });
-  const tomorrowEvents = calendarEvents.filter(function(e) { return sameDay(new Date(e.time), tomorrow); });
-
-  function renderEvent(e) {
-    const d = new Date(e.time);
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    const color = typeColors[e.type] || '#6C63FF';
-    return '<div class="event-card" onclick="showToast(\'📅 ' + (e.client || '') + '\')">' +
-      '<div class="event-time-block"><div class="event-time">' + h + ':' + m + '</div></div>' +
-      '<div style="width:3px;border-radius:2px;background:' + color + ';align-self:stretch;flex-shrink:0"></div>' +
-      '<div class="event-info">' +
-        '<div class="event-title">' + e.title + '</div>' +
-        (e.client ? '<div class="event-client">👤 ' + e.client + '</div>' : '') +
-        (e.note ? '<div class="event-note">💭 ' + e.note + '</div>' : '') +
-      '</div>' +
-    '</div>';
-  }
-
-  let html = '<div class="calendar-header">' +
-    '<div class="calendar-title">📅 Расписание</div>' +
-    '<div class="calendar-subtitle">' + todayStr + '</div>' +
-  '</div>' +
-  '<div class="notification-banner" style="border-color:rgba(108,99,255,0.3)">' +
-    '<span class="notif-icon">🤖</span>' +
-    '<span><b>Flai:</b> У вас показ сегодня в 10:00. Удачи! 🏠✨</span>' +
-  '</div>' +
-  '<button class="add-event-btn" onclick="openAddEvent()"><i class="fas fa-plus"></i> Добавить событие</button>';
-
-  if (todayEvents.length) {
-    html += '<div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Сегодня</div>';
-    html += todayEvents.map(renderEvent).join('');
-  }
-  if (tomorrowEvents.length) {
-    html += '<div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px">Завтра</div>';
-    html += tomorrowEvents.map(renderEvent).join('');
-  }
-
-  html += '<div style="margin-top:24px"><div style="font-size:15px;font-weight:700;margin-bottom:12px">🏆 Рейтинг риэлторов</div>' + renderRating() + '</div>';
+  if (todayEv.length) html += '<div class="sec-lbl">Сегодня</div>' + todayEv.map(evHtml).join('');
+  if (tomEv.length)   html += '<div class="sec-lbl">Завтра</div>'   + tomEv.map(evHtml).join('');
+  html += '<div style="margin-top:20px"><div class="sec-lbl">🏆 Топ риэлторов</div>' + renderRating() + '</div>';
 
   el.innerHTML = html;
-
-  const evDateInput = document.getElementById('ev-date');
-  if (evDateInput) evDateInput.value = today.toISOString().split('T')[0];
-}
-
-function openAddEvent() {
-  requireAuth(function() { openModal('event-modal'); });
-}
-
-function saveEvent() {
-  const title = document.getElementById('ev-title').value || 'Событие';
-  const client = document.getElementById('ev-client').value;
-  const date = document.getElementById('ev-date').value;
-  const time = document.getElementById('ev-time').value;
-  const note = document.getElementById('ev-note').value;
-  const type = document.getElementById('ev-type').value;
-  const typeEmoji = { showing: '🏠', call: '📞', deal: '✍️', meeting: '🤝' }[type] || '📅';
-  calendarEvents.push({
-    id: Date.now(),
-    title: typeEmoji + ' ' + title,
-    time: new Date(date + 'T' + (time || '10:00')).toISOString(),
-    type: type, client: client, note: note
-  });
-  renderCalendar();
-  closeModal('event-modal');
-  showToast('✅ Событие добавлено! Flai напомнит вам 🤖');
-}
-
-// ============================================================
-// PROFILE
-// ============================================================
-function renderProfile() {
-  const el = document.getElementById('profile-screen');
-  if (!el) return;
-
-  if (!currentUser) {
-    el.innerHTML = '<div class="empty-state" style="padding-top:60px">' +
-      '<div class="empty-icon">👤</div>' +
-      '<div class="empty-title">Войдите в систему</div>' +
-      '<div class="empty-sub">Зарегистрируйтесь как риэлтор чтобы видеть свой профиль</div>' +
-      '<button class="btn-primary" style="max-width:240px;margin:20px auto 0" onclick="openModal(\'auth-modal\')">Войти / Регистрация</button>' +
-    '</div>';
-    return;
-  }
-
-  const initial = (currentUser.name || 'R').charAt(0).toUpperCase();
-  el.innerHTML =
-    '<div class="profile-hero">' +
-      '<div class="profile-ava">' + initial + '</div>' +
-      '<div class="profile-name">' + (currentUser.name || 'Риэлтор') + '</div>' +
-      '<div class="profile-status">🏠 Верифицированный риэлтор · Астана</div>' +
-      '<div class="profile-stats">' +
-        '<div class="profile-stat"><div class="profile-stat-val">12</div><div class="profile-stat-lbl">Объектов</div></div>' +
-        '<div class="profile-stat"><div class="profile-stat-val">4.8</div><div class="profile-stat-lbl"><div class="rating-stars">★★★★★</div></div></div>' +
-        '<div class="profile-stat"><div class="profile-stat-val">47</div><div class="profile-stat-lbl">Сделок</div></div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="menu-section">' +
-      '<div class="menu-section-title">Мои объекты</div>' +
-      '<div class="menu-item" onclick="showToast(\'📋 Мои объекты\')">' +
-        '<div class="menu-icon" style="background:rgba(108,99,255,0.15)">🏠</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title">Активные объекты</div><div class="menu-item-sub">12 опубликованы</div></div>' +
-        '<i class="fas fa-chevron-right menu-arrow"></i>' +
-      '</div>' +
-      '<div class="menu-item" onclick="showToast(\'❤️ Избранное\')">' +
-        '<div class="menu-icon" style="background:rgba(255,101,132,0.15)">❤️</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title">Избранные объекты</div><div class="menu-item-sub">8 в избранном</div></div>' +
-        '<i class="fas fa-chevron-right menu-arrow"></i>' +
-      '</div>' +
-    '</div>' +
-    '<div class="menu-section">' +
-      '<div class="menu-section-title">Инструменты</div>' +
-      '<div class="menu-item" onclick="showScreen(\'calendar-screen\');setNav(null)">' +
-        '<div class="menu-icon" style="background:rgba(67,198,172,0.15)">📅</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title">Мой планировщик</div><div class="menu-item-sub">4 события на неделе</div></div>' +
-        '<i class="fas fa-chevron-right menu-arrow"></i>' +
-      '</div>' +
-      '<div class="menu-item" onclick="openRatingModal()">' +
-        '<div class="menu-icon" style="background:rgba(247,151,30,0.15)">🏆</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title">Рейтинг риэлторов</div><div class="menu-item-sub">Вы на 3-м месте</div></div>' +
-        '<i class="fas fa-chevron-right menu-arrow"></i>' +
-      '</div>' +
-      '<div class="menu-item" onclick="showToast(\'💡 Налоговый советник\')">' +
-        '<div class="menu-icon" style="background:rgba(247,151,30,0.12)">💡</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title">Налоговый советник 2026</div><div class="menu-item-sub">Рассчитать выгоду обмена</div></div>' +
-        '<span class="tag-tax">Новое</span>' +
-      '</div>' +
-    '</div>' +
-    '<div class="menu-section">' +
-      '<div class="menu-section-title">Аккаунт</div>' +
-      '<div class="menu-item" onclick="showToast(\'⚙️ Настройки\')">' +
-        '<div class="menu-icon" style="background:rgba(108,99,255,0.1)">⚙️</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title">Настройки</div><div class="menu-item-sub">Профиль, уведомления</div></div>' +
-        '<i class="fas fa-chevron-right menu-arrow"></i>' +
-      '</div>' +
-      '<div class="menu-item" onclick="doLogout()">' +
-        '<div class="menu-icon" style="background:rgba(255,101,132,0.12)">🚪</div>' +
-        '<div class="menu-item-info"><div class="menu-item-title" style="color:var(--accent3)">Выйти</div></div>' +
-        '<i class="fas fa-chevron-right menu-arrow"></i>' +
-      '</div>' +
-    '</div>';
+  var evd = document.getElementById('ev-date');
+  if (evd) evd.value = today.toISOString().split('T')[0];
 }
 
 function renderRating() {
-  const realtors = [
-    { name: 'Сауле Т.', deals: 68, rating: 5.0, rank: 1 },
-    { name: 'Айгерим К.', deals: 61, rating: 4.9, rank: 2 },
-    { name: 'Данияр М.', deals: 54, rating: 4.7, rank: 3 },
-    { name: 'Нурлан А.', deals: 43, rating: 4.6, rank: 4 },
-    { name: 'Асель Б.', deals: 38, rating: 4.8, rank: 5 },
+  var list = [
+    { n:'Сауле Т.',   deals:68, r:5.0, rank:1 },
+    { n:'Айгерим К.', deals:61, r:4.9, rank:2 },
+    { n:'Данияр М.',  deals:54, r:4.7, rank:3 },
+    { n:'Нурлан А.',  deals:43, r:4.6, rank:4 },
+    { n:'Асель Б.',   deals:38, r:4.8, rank:5 },
   ];
-  return realtors.map(function(r) {
-    const rankClass = r.rank <= 3 ? 'rank-' + r.rank : 'rank-other';
-    const rankIcon = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : r.rank;
-    const barWidth = Math.round(r.deals / 68 * 100);
-    return '<div class="rating-card">' +
-      '<div class="rank-badge ' + rankClass + '">' + rankIcon + '</div>' +
-      '<div style="flex:1">' +
-        '<div style="font-size:14px;font-weight:700">' + r.name + '</div>' +
-        '<div class="rating-bar-wrap"><div class="rating-bar" style="width:' + barWidth + '%"></div></div>' +
-        '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">' + r.deals + ' сделок · ⭐ ' + r.rating + '</div>' +
-      '</div>' +
-    '</div>';
+  var medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
+  return list.map(function (r) {
+    var ico = medals[r.rank] || r.rank;
+    var bg  = r.rank===1 ? 'var(--acc4)' : r.rank===2 ? '#c0c0c0' : r.rank===3 ? '#cd7f32' : 'var(--inp)';
+    var w   = Math.round(r.deals / 68 * 100);
+    return (
+      '<div class="rank-card">' +
+        '<div class="rank-num" style="background:' + bg + ';color:' + (r.rank <= 3 ? '#fff' : 'var(--t3)') + '">' + ico + '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;font-weight:700">' + r.n + '</div>' +
+          '<div class="rank-bar" style="width:' + w + '%"></div>' +
+          '<div style="font-size:11px;color:var(--t3);margin-top:3px">' + r.deals + ' сделок · ⭐ ' + r.r + '</div>' +
+        '</div>' +
+      '</div>'
+    );
   }).join('');
 }
 
-function openRatingModal() {
-  showToast('🏆 Рейтинг обновляется ежемесячно');
+function saveEv() {
+  var title  = (document.getElementById('ev-title')  || {}).value || 'Событие';
+  var client = (document.getElementById('ev-client') || {}).value || '';
+  var date   = (document.getElementById('ev-date')   || {}).value || '';
+  var time   = (document.getElementById('ev-time')   || {}).value || '10:00';
+  var note   = (document.getElementById('ev-note')   || {}).value || '';
+  var type   = (document.getElementById('ev-type')   || {}).value || 'showing';
+  var emMap  = { showing:'🏠', call:'📞', deal:'✍️', meeting:'🤝' };
+  var em     = emMap[type] || '📅';
+  calEvents.push({ id:Date.now(), title:em+' '+title, time:new Date(date+'T'+time).toISOString(), type:type, client:client, note:note });
+  renderCal();
+  closeM('m-ev');
+  toast('✅ Добавлено! Flai напомнит 🤖');
 }
 
-// ============================================================
-// CHAT FLAI
-// ============================================================
-function setRole(btn, role) {
-  currentRole = role;
-  document.querySelectorAll('.role-btn').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-}
-
-function flaiEnter(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFlaiMessage(); }
-}
-
-async function sendFlaiMessage() {
-  const input = document.getElementById('flai-input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-
-  appendMsg('flai-messages', text, 'own');
-  const typing = appendTyping('flai-messages');
-
-  try {
-    const res = await fetch('/api/chat/flai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, role: currentRole })
-    });
-    const data = await res.json();
-    typing.remove();
-    appendMsg('flai-messages', data.reply, 'ai', 'F');
-  } catch(e) {
-    typing.remove();
-    appendMsg('flai-messages', 'Связь прервана. Попробуйте снова.', 'ai', 'F');
+/* ── PROFILE ────────────────────────────────── */
+function renderProf() {
+  var el = document.getElementById('prof-body');
+  if (!el) return;
+  if (!curUser) {
+    el.innerHTML =
+      '<div class="empty">' +
+        '<div class="empty-ico">👤</div>' +
+        '<div class="empty-t">Войдите в систему</div>' +
+        '<div class="empty-s">Только для верифицированных риэлторов</div>' +
+        '<button class="btn-main" style="max-width:220px;margin:18px auto 0" onclick="openM(\'m-auth\')">Войти / Регистрация</button>' +
+      '</div>';
+    return;
   }
+  var ini = (curUser.name || 'R').charAt(0).toUpperCase();
+  el.innerHTML =
+    '<div class="prof-hero">' +
+      '<div class="ph-ava">' + ini + '</div>' +
+      '<div class="ph-name">' + curUser.name + '</div>' +
+      '<div class="ph-tag">🏠 Верифицированный риэлтор · Астана</div>' +
+      '<div class="ph-stats">' +
+        '<div class="ph-stat"><div class="ph-val">12</div><div class="ph-lbl">Объектов</div></div>' +
+        '<div class="ph-stat"><div class="ph-val">⭐ 4.8</div><div class="ph-lbl">Рейтинг</div></div>' +
+        '<div class="ph-stat"><div class="ph-val">47</div><div class="ph-lbl">Сделок</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="mnu-sec">' +
+      '<div class="mnu-lbl">Мои объекты</div>' +
+      '<div class="mnu-item" onclick="toast(\'📋 Мои объекты\')"><div class="mnu-ico" style="background:rgba(124,111,247,.14)">🏠</div><div style="flex:1"><div class="mnu-name">Активные объекты</div><div class="mnu-sub">12 опубликованы</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:12px"></i></div>' +
+      '<div class="mnu-item" onclick="toast(\'❤️ Избранное\')"><div class="mnu-ico" style="background:rgba(255,92,124,.12)">❤️</div><div style="flex:1"><div class="mnu-name">Избранное</div><div class="mnu-sub">8 объектов</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:12px"></i></div>' +
+    '</div>' +
+
+    '<div class="mnu-sec">' +
+      '<div class="mnu-lbl">Инструменты</div>' +
+      '<div class="mnu-item" onclick="go(\'s-cal\');nav(null)"><div class="mnu-ico" style="background:rgba(62,207,172,.12)">📅</div><div style="flex:1"><div class="mnu-name">Планировщик</div><div class="mnu-sub">4 события</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:12px"></i></div>' +
+      '<div class="mnu-item" onclick="toast(\'🏆 Рейтинг\')"><div class="mnu-ico" style="background:rgba(255,171,48,.12)">🏆</div><div style="flex:1"><div class="mnu-name">Рейтинг риэлторов</div><div class="mnu-sub">Вы на 3-м месте</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:12px"></i></div>' +
+      '<div class="mnu-item" onclick="toast(\'💡 Налоговый советник\')"><div class="mnu-ico" style="background:rgba(255,171,48,.08)">💡</div><div style="flex:1"><div class="mnu-name">Налоговый советник 2026</div><div class="mnu-sub">Обмен vs продажа</div></div><span class="ttax">Новое</span></div>' +
+    '</div>' +
+
+    '<div class="mnu-sec">' +
+      '<div class="mnu-lbl">Аккаунт</div>' +
+      '<div class="mnu-item" onclick="toast(\'⚙️ Настройки\')"><div class="mnu-ico" style="background:rgba(124,111,247,.08)">⚙️</div><div style="flex:1"><div class="mnu-name">Настройки</div><div class="mnu-sub">Профиль, уведомления</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:12px"></i></div>' +
+      '<div class="mnu-item" onclick="doLogout()"><div class="mnu-ico" style="background:rgba(255,92,124,.08)">🚪</div><div style="flex:1"><div class="mnu-name" style="color:var(--acc3)">Выйти</div></div></div>' +
+    '</div>';
 }
 
-// ============================================================
-// CHAT AIRA
-// ============================================================
-function airaEnter(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiraMessage(); }
+/* ── AUTH ───────────────────────────────────── */
+function authTab(t) {
+  document.getElementById('at-in').classList.toggle('on', t === 'in');
+  document.getElementById('at-up').classList.toggle('on', t === 'up');
+  document.getElementById('af-in').style.display = t === 'in' ? 'block' : 'none';
+  document.getElementById('af-up').style.display = t === 'up' ? 'block' : 'none';
 }
 
-async function sendAiraMessage() {
-  if (!currentUser) { showToast('🔐 Только для риэлторов!'); openModal('auth-modal'); return; }
-  const input = document.getElementById('aira-input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  appendMsg('aira-messages', text, 'own');
-  showToast('✅ Отправлено в Aira');
-}
-
-function toggleThread(header) {
-  const body = header.nextElementSibling;
-  const icon = header.querySelector('.fa-chevron-down');
-  if (body) {
-    const isOpen = body.style.display !== 'none';
-    body.style.display = isOpen ? 'none' : 'block';
-    if (icon) icon.style.transform = isOpen ? '' : 'rotate(180deg)';
-  }
-}
-
-// ============================================================
-// CHAT HELPERS
-// ============================================================
-function appendMsg(containerId, text, type, initial) {
-  const c = document.getElementById(containerId);
-  const div = document.createElement('div');
-  div.className = 'msg slide-up' + (type === 'own' ? ' own' : '');
-  const now = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-  if (type === 'own') {
-    div.innerHTML = '<div><div class="msg-bubble">' + text + '</div><div class="msg-time">' + now + '</div></div>';
-  } else {
-    const textFormatted = text.replace(/\n/g, '<br>');
-    div.innerHTML = '<div class="msg-ava ai">' + (initial || 'AI') + '</div><div><div class="msg-bubble">' + textFormatted + '</div><div class="msg-time">' + now + '</div></div>';
-  }
-  c.appendChild(div);
-  c.scrollTop = c.scrollHeight;
-  return div;
-}
-
-function appendTyping(containerId) {
-  const c = document.getElementById(containerId);
-  const div = document.createElement('div');
-  div.className = 'msg';
-  div.innerHTML = '<div class="msg-ava ai">F</div><div class="msg-bubble" style="padding:10px 14px"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
-  c.appendChild(div);
-  c.scrollTop = c.scrollHeight;
-  return div;
-}
-
-// ============================================================
-// AUTH
-// ============================================================
-function switchAuthTab(tab) {
-  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-  document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
-  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-}
-
-async function doLogin() {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  if (!email) { showToast('⚠️ Введите email'); return; }
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, password: pass })
-    });
-    const data = await res.json();
-    if (data.success) {
-      currentUser = data.user;
-      localStorage.setItem('flapy_user', JSON.stringify(currentUser));
-      updateAuthUI();
-      closeModal('auth-modal');
-      renderProfile();
-      showToast('👋 Добро пожаловать, ' + (currentUser.name || 'риэлтор') + '!');
+function doLogin() {
+  var email = (document.getElementById('l-email') || {}).value || '';
+  if (!email) { toast('⚠️ Введите email'); return; }
+  fetch('/api/auth/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (d.success) {
+      curUser = d.user;
+      localStorage.setItem('flapy_user', JSON.stringify(curUser));
+      renderAuthSlot(); closeM('m-auth'); renderProf();
+      toast('👋 Добро пожаловать, ' + (curUser.name || 'риэлтор') + '!');
     }
-  } catch(e) {
-    showToast('⚠️ Ошибка входа');
-  }
+  }).catch(function () { toast('⚠️ Ошибка входа'); });
 }
 
-async function doRegister() {
-  const name = document.getElementById('reg-name').value;
-  const email = document.getElementById('reg-email').value;
-  const phone = document.getElementById('reg-phone').value;
-  if (!name || !email) { showToast('⚠️ Заполните обязательные поля'); return; }
-  try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, email: email, phone: phone })
-    });
-    const data = await res.json();
-    if (data.success) {
-      currentUser = Object.assign({}, data.user, { name: name });
-      localStorage.setItem('flapy_user', JSON.stringify(currentUser));
-      updateAuthUI();
-      closeModal('auth-modal');
-      renderProfile();
-      showToast('🎉 Добро пожаловать в Flapy, ' + name + '!');
+function doReg() {
+  var name  = (document.getElementById('r-name')  || {}).value || '';
+  var email = (document.getElementById('r-email') || {}).value || '';
+  if (!name || !email) { toast('⚠️ Заполните обязательные поля'); return; }
+  fetch('/api/auth/register', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name, email: email })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (d.success) {
+      curUser = Object.assign({}, d.user, { name: name });
+      localStorage.setItem('flapy_user', JSON.stringify(curUser));
+      renderAuthSlot(); closeM('m-auth'); renderProf();
+      toast('🎉 Добро пожаловать в Flapy, ' + name + '!');
     }
-  } catch(e) {
-    showToast('⚠️ Ошибка регистрации');
-  }
+  }).catch(function () { toast('⚠️ Ошибка регистрации'); });
 }
 
 function doLogout() {
-  currentUser = null;
+  curUser = null;
   localStorage.removeItem('flapy_user');
-  updateAuthUI();
-  renderProfile();
-  showToast('👋 Вы вышли из системы');
+  renderAuthSlot(); renderProf();
+  toast('👋 Вы вышли');
 }
 
-function updateAuthUI() {
-  const area = document.getElementById('auth-area');
-  if (currentUser) {
-    const initial = (currentUser.name || 'R').charAt(0).toUpperCase();
-    const firstName = currentUser.name ? currentUser.name.split(' ')[0] : 'Профиль';
-    area.innerHTML = '<div class="avatar-pill" onclick="showScreen(\'profile-screen\');setNav(null)" style="cursor:pointer">' +
-      '<div class="avatar-circle">' + initial + '</div>' +
-      '<span>' + firstName + '</span>' +
-    '</div>';
+function renderAuthSlot() {
+  var slot = document.getElementById('auth-slot');
+  if (!slot) return;
+  if (curUser) {
+    var ini = (curUser.name || 'R').charAt(0).toUpperCase();
+    var fn  = (curUser.name || 'Профиль').split(' ')[0];
+    slot.innerHTML =
+      '<div class="user-chip" onclick="go(\'s-prof\');nav(null)">' +
+        '<div class="u-ava">' + ini + '</div>' +
+        '<span>' + fn + '</span>' +
+      '</div>';
   } else {
-    area.innerHTML = '<button class="btn-primary" id="login-btn" onclick="openModal(\'auth-modal\')">Войти</button>';
+    slot.innerHTML = '<button class="login-btn" onclick="openM(\'m-auth\')">Войти</button>';
   }
 }
 
-function requireAuth(cb) {
-  if (currentUser) cb();
-  else { showToast('🔐 Войдите как риэлтор'); openModal('auth-modal'); }
+function needAuth(cb) {
+  if (curUser) cb();
+  else { toast('🔐 Войдите как риэлтор'); openM('m-auth'); }
 }
 
-// ============================================================
-// UI HELPERS
-// ============================================================
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
-  const screen = document.getElementById(id);
-  if (screen) screen.classList.add('active');
-
-  if (id === 'calendar-screen') loadCalendar();
-  if (id === 'profile-screen') renderProfile();
-  if (id === 'search-screen') { setTimeout(function() { doSearch(); }, 100); }
+/* ── NAV / SCREENS ──────────────────────────── */
+function go(id) {
+  document.querySelectorAll('.scr').forEach(function (s) { s.classList.remove('on'); });
+  var s = document.getElementById(id);
+  if (s) s.classList.add('on');
+  if (id === 's-cal')    renderCal();
+  if (id === 's-prof')   renderProf();
+  if (id === 's-search') setTimeout(doSearch, 40);
 }
 
-function setNav(el) {
-  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-  if (el) el.classList.add('active');
+function nav(el) {
+  document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('on'); });
+  if (el) el.classList.add('on');
 }
 
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add('open');
-}
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('open');
-}
-function closeModalOut(e, id) {
-  if (e.target.id === id) closeModal(id);
-}
+function showMore() { openM('m-more'); }
 
-function showToast(msg, duration) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, duration || 2800);
-}
+/* ── MODALS ─────────────────────────────────── */
+function openM(id) { var el = document.getElementById(id); if (el) el.classList.add('on'); }
+function closeM(id) { var el = document.getElementById(id); if (el) el.classList.remove('on'); }
+function closeOvl(e, id) { if (e.target.id === id) closeM(id); }
 
+/* ── THEME / LANG ───────────────────────────── */
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
+  var cur  = document.documentElement.getAttribute('data-theme');
+  var next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('flapy_theme', next);
   updateThemeIcon(next);
 }
-
-function updateThemeIcon(theme) {
-  const btn = document.getElementById('theme-btn');
-  if (btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+function updateThemeIcon(th) {
+  var btn = document.getElementById('btn-theme');
+  if (btn) btn.innerHTML = th === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+}
+function toggleLang() {
+  curLang = curLang === 'ru' ? 'kz' : 'ru';
+  var btn = document.getElementById('btn-lang');
+  if (btn) btn.textContent = curLang === 'ru' ? '🇰🇿 Қаз' : '🇷🇺 Рус';
+  toast(curLang === 'kz' ? '🇰🇿 Қазақ тілі қосылды' : '🇷🇺 Русский язык');
 }
 
-function toggleLang() {
-  currentLang = currentLang === 'ru' ? 'kz' : 'ru';
-  document.getElementById('lang-toggle').textContent = currentLang === 'ru' ? '🇰🇿 Қаз' : '🇷🇺 Рус';
-  showToast(currentLang === 'kz' ? '🇰🇿 Қазақ тілі қосылды' : '🇷🇺 Русский язык включён');
+/* ── TOAST ──────────────────────────────────── */
+function toast(msg, ms) {
+  var el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { el.classList.remove('on'); }, ms || 2400);
 }
