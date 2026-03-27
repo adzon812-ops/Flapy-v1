@@ -37,9 +37,9 @@ window.addEventListener('load', function () {
 
 /* default screen on DOM ready */
 window.addEventListener('DOMContentLoaded', function () {
-  /* Objects screen is default (already has class "on" in HTML) */
   var ns = document.getElementById('n-search');
   if (ns) ns.classList.add('on');
+  updateAiraBadge();
 });
 
 /* ══ DATA ════════════════════════════════ */
@@ -287,8 +287,6 @@ function submitListing() {
 /* ══ FLAI CHAT ═══════════════════════════ */
 function setRole(role, btn) {
   curRole = role;
-  document.querySelectorAll('#rt-b,#rt-r').forEach(function(b){ b.classList.remove('on'); });
-  btn.classList.add('on');
 }
 
 function quickMsg(txt) { sendFlaiMsg(txt); }
@@ -316,11 +314,31 @@ function sendFlaiMsg(txt) {
 }
 
 /* ══ AIRA CHAT ═══════════════════════════ */
+function updateAiraBadge() {
+  var badge = document.getElementById('aira-status-badge');
+  if (!badge) return;
+  if (curUser) {
+    badge.style.cssText = 'background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#27AE60;font-weight:600';
+    badge.textContent = '✓ Вы вошли';
+  } else {
+    badge.style.cssText = 'background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#F47B20;font-weight:600';
+    badge.textContent = '🔒 Войдите';
+  }
+}
+
+function openAddListing() {
+  openM('m-add');
+}
+
 function sendAira() {
-  if (!curUser) { toast('🔐 Только для риэлторов'); openM('m-auth'); return; }
   var inp = document.getElementById('aira-inp');
   var txt = inp ? inp.value.trim() : '';
   if (!txt) return;
+  if (!curUser) {
+    toast('🔐 Войдите, чтобы отправить сообщение');
+    openM('m-auth');
+    return;
+  }
   inp.value = ''; autoResize(inp);
   /* add new thread */
   var name = curUser.name || 'Риэлтор';
@@ -546,7 +564,7 @@ function doLogin() {
       if (d.success) {
         curUser = d.user;
         localStorage.setItem('fp_user', JSON.stringify(curUser));
-        renderAuthSlot(); closeM('m-auth'); renderProf();
+        renderAuthSlot(); closeM('m-auth'); renderProf(); updateAiraBadge();
         toast('👋 Добро пожаловать, ' + ((curUser.name||'').split(' ')[0]||'риэлтор') + '!');
       }
     }).catch(function(){ toast('⚠️ Ошибка входа'); });
@@ -563,7 +581,7 @@ function doReg() {
       if (d.success) {
         curUser = Object.assign({}, d.user, {name:name});
         localStorage.setItem('fp_user', JSON.stringify(curUser));
-        renderAuthSlot(); closeM('m-auth'); renderProf();
+        renderAuthSlot(); closeM('m-auth'); renderProf(); updateAiraBadge();
         toast('🎉 Добро пожаловать в Flapy, '+name.split(' ')[0]+'!');
       }
     }).catch(function(){ toast('⚠️ Ошибка регистрации'); });
@@ -571,7 +589,7 @@ function doReg() {
 
 function doLogout() {
   curUser = null; localStorage.removeItem('fp_user');
-  renderAuthSlot(); renderProf(); toast('👋 До встречи!');
+  renderAuthSlot(); renderProf(); updateAiraBadge(); toast('👋 До встречи!');
 }
 
 function renderAuthSlot() {

@@ -696,10 +696,12 @@ img { display:block; width:100%; }
   border-radius: 10px; position: relative; transition: color .15s;
 }
 .nav-it i    { font-size: 20px; transition: transform .15s; }
+.nav-svg     { width: 22px; height: 22px; transition: transform .15s; flex-shrink: 0; }
 .nav-it span { font-size: 9px; font-weight: 700; }
 .nav-it.on { color: var(--navy); }
 [data-theme=dark] .nav-it.on { color: var(--orange); }
-.nav-it.on i { transform: scale(1.1); }
+.nav-it.on i    { transform: scale(1.1); }
+.nav-it.on .nav-svg { transform: scale(1.1); }
 .nav-plus-wrap { flex-shrink: 0; padding: 0 6px; }
 .nav-plus {
   width: 48px; height: 48px; border-radius: 14px;
@@ -867,7 +869,7 @@ textarea.finput { resize: none; min-height: 68px; line-height: 1.5; }
 <!-- ════ LOADER ════════════════════════════ -->
 <div id="loader">
   <div class="ld-logo">
-    <div class="ld-icon">🏠</div>
+    <div class="ld-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
     <div class="ld-name">Flapy<span class="ld-tm">™</span></div>
   </div>
   <div class="ld-tagline">Ваш умный помощник на рынке жилья</div>
@@ -877,7 +879,7 @@ textarea.finput { resize: none; min-height: 68px; line-height: 1.5; }
 <!-- ════ TOPBAR ════════════════════════════ -->
 <div id="topbar">
   <div class="logo-row">
-    <div class="logo-icon">🏠</div>
+    <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
     <div class="logo-txt">Flapy<span class="logo-tag">™</span></div>
   </div>
   <div class="top-right">
@@ -921,22 +923,20 @@ textarea.finput { resize: none; min-height: 68px; line-height: 1.5; }
   <div id="s-flai" class="scr">
     <div class="chat-wrap">
       <div class="chat-header">
-        <div class="ch-ava flai">F</div>
+        <div class="ch-ava flai" style="font-size:12px;letter-spacing:-1px">AI</div>
         <div style="flex:1">
           <div class="ch-name">Flai, <span style="font-size:13px;font-weight:600;color:var(--t2)">умный помощник по жилью</span></div>
           <div class="ch-status">Онлайн</div>
         </div>
-        <div class="role-btns">
-          <button class="rbtn on" id="rt-b" onclick="setRole('buyer',this)">👤 Клиент</button>
-          <button class="rbtn"    id="rt-r" onclick="setRole('realtor',this)">🏠 Риэлтор</button>
-        </div>
+        <div style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">✨ AI</div>
       </div>
       <div class="quick-row">
-        <div class="qchip" onclick="quickMsg('Описание')">Описание</div>
-        <div class="qchip" onclick="quickMsg('Как работает ипотека?')">Ипотека</div>
-        <div class="qchip" onclick="quickMsg('Расскажи про продвижение')">Продвижение</div>
-        <div class="qchip" onclick="quickMsg('Какие налоги в 2026?')">Налоги</div>
-        <div class="qchip" onclick="quickMsg('Хочу показ квартиры')">Показ</div>
+        <div class="qchip" onclick="quickMsg('Помоги составить описание объекта')">✍️ Описание</div>
+        <div class="qchip" onclick="quickMsg('Как работает ипотека?')">🏦 Ипотека</div>
+        <div class="qchip" onclick="quickMsg('Расскажи про продвижение объекта')">📢 Продвижение</div>
+        <div class="qchip" onclick="quickMsg('Налоги при продаже в 2026?')">💡 Налоги</div>
+        <div class="qchip" onclick="quickMsg('Хочу организовать показ квартиры')">📅 Показ</div>
+        <div class="qchip" onclick="quickMsg('Оцени рыночную стоимость')">💰 Оценка</div>
       </div>
       <div class="chat-body" id="flai-msgs">
         <div class="msg-date">Сегодня</div>
@@ -966,12 +966,12 @@ textarea.finput { resize: none; min-height: 68px; line-height: 1.5; }
   <div id="s-aira" class="scr">
     <div class="chat-wrap">
       <div class="chat-header">
-        <div class="ch-ava aira">A</div>
+        <div class="ch-ava aira" style="font-size:13px;font-weight:900">A</div>
         <div style="flex:1">
           <div class="ch-name">Aira <span style="font-size:12px;font-weight:500;color:var(--t2)">— Чат риэлторов</span></div>
           <div class="ch-status" style="color:var(--orange)">47 риэлторов онлайн</div>
         </div>
-        <div style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">🔒 Только риэлторы</div>
+        <div id="aira-status-badge" style="background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#27AE60;font-weight:600">✓ Вы вошли</div>
       </div>
       <div class="chat-body" id="aira-msgs" style="padding:10px 0">
         <div class="msg-date" style="margin-bottom:8px">Только для верифицированных риэлторов</div>
@@ -1051,22 +1051,26 @@ textarea.finput { resize: none; min-height: 68px; line-height: 1.5; }
 <!-- ════ BOTTOM NAV ═════════════════════════ -->
 <div id="botbar">
   <div class="nav-it on" id="n-search" onclick="go('s-search');nav(this)">
-    <i class="fas fa-home"></i><span>Объекты</span>
+    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    <span>Объекты</span>
   </div>
   <div class="nav-it" id="n-feed" onclick="go('s-feed');nav(this)">
-    <i class="fas fa-film"></i><span>Лента</span>
+    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+    <span>Лента</span>
   </div>
   <div class="nav-plus-wrap">
-    <div class="nav-plus" onclick="needAuth(function(){openM('m-add')})">
-      <i class="fas fa-plus"></i>
+    <div class="nav-plus" onclick="openAddListing()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>
   </div>
   <div class="nav-it" id="n-flai" onclick="go('s-flai');nav(this)" style="position:relative">
-    <i class="fas fa-bolt"></i><span>Flai</span>
+    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M9 9.5c.5-1.5 2-2.5 3.5-2 1.2.4 2 1.5 1.8 2.8-.2 1.3-1.8 2-2.3 2.7v.5"/><circle cx="12" cy="16.5" r=".75" fill="currentColor" stroke="none"/></svg>
+    <span>Flai AI</span>
     <span class="n-badge">2</span>
   </div>
   <div class="nav-it" id="n-more" onclick="showMore()">
-    <i class="fas fa-ellipsis-h"></i><span>Ещё</span>
+    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
+    <span>Ещё</span>
   </div>
 </div>
 
