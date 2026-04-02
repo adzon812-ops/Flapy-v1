@@ -17,7 +17,21 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors())
 app.use('/static/*', serveStatic({ root: './' }))
 
+// 🔍 ФУНКЦИЯ С ЛОГАМИ ДЛЯ ОТЛАДКИ
 function getSupabase(c: any) {
+  console.log('🔍 [DEBUG] SUPABASE_URL exists:', !!c.env.SUPABASE_URL)
+  console.log('🔍 [DEBUG] SUPABASE_ANON_KEY exists:', !!c.env.SUPABASE_ANON_KEY)
+  
+  if (!c.env.SUPABASE_URL) {
+    console.error('❌ [ERROR] SUPABASE_URL is missing!')
+    throw new Error('Supabase URL not configured')
+  }
+  if (!c.env.SUPABASE_ANON_KEY) {
+    console.error('❌ [ERROR] SUPABASE_ANON_KEY is missing!')
+    throw new Error('Supabase ANON_KEY not configured')
+  }
+  
+  console.log('✅ [DEBUG] Creating Supabase client...')
   return createClient(c.env.SUPABASE_URL, c.env.SUPABASE_ANON_KEY)
 }
 
@@ -36,10 +50,16 @@ app.get('/admin-portal-qjmf2026', async (c) => {
   return c.html(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Flapy Admin</title><style>body{margin:0;font-family:Inter,sans-serif;background:#0F0F1A;color:#fff;padding:20px}h1{color:#6EEC9A}</style></head><body><h1>Flapy™ Admin</h1><p>Панель управления</p></body></html>`)
 })
 
-// API: LISTINGS
+// 🔍 API: LISTINGS С ПОДРОБНЫМИ ЛОГАМИ
 app.get('/api/listings', async (c) => {
+  console.log('📡 [API] /api/listings called')
+  
   try {
+    console.log('🔑 [DEBUG] Checking environment variables...')
     const supabase = getSupabase(c)
+    console.log('✅ [DEBUG] Supabase client created successfully')
+    
+    console.log('📊 [DEBUG] Querying database: listings table...')
     const { data, error } = await supabase
       .from('listings')
       .select('*')
@@ -48,9 +68,15 @@ app.get('/api/listings', async (c) => {
       .limit(50)
     
     if (error) {
-      console.error('Supabase error:', error)
-      return c.json({ listings: [], error: error.message }, 500)
+      console.error('❌ [ERROR] Supabase query error:', error)
+      console.error('❌ [ERROR] Error code:', error.code)
+      console.error('❌ [ERROR] Error message:', error.message)
+      console.error('❌ [ERROR] Error details:', error.details)
+      console.error('❌ [ERROR] Error hint:', error.hint)
+      throw error
     }
+    
+    console.log(`✅ [DEBUG] Loaded ${data?.length || 0} listings from database`)
     
     const formatted = (data || []).map((l: any) => ({
       id: l.id,
@@ -76,11 +102,24 @@ app.get('/api/listings', async (c) => {
       photos: l.images?.length ? l.images : ['🏠']
     }))
     
-    console.log(`✅ Loaded ${formatted.length} listings`)
+    console.log('✅ [API] Returning response with', formatted.length, 'listings')
     return c.json({ listings: formatted })
+    
   } catch (e: any) {
-    console.error('Listings error:', e)
-    return c.json({ listings: [], error: e.message }, 500)
+    console.error('💥 [CRITICAL] LISTINGS ERROR:', e)
+    console.error('💥 [CRITICAL] Error name:', e.name)
+    console.error('💥 [CRITICAL] Error message:', e.message)
+    console.error('💥 [CRITICAL] Error stack:', e.stack)
+    
+    return c.json({ 
+      listings: [], 
+      error: e.message,
+      debug: {
+        name: e.name,
+        message: e.message,
+        // Не отправляем stack в продакшене из соображений безопасности
+      }
+    }, 500)
   }
 })
 
