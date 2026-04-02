@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   FLAPY  app.js  v5.0  — Fully Working Product
+   FLAPY  app.js  v5.1  — Fixed + Green Theme + Security
    - Video apartments (YouTube embed)
    - Full Flai + Aira chat logic
    - Rating system with reviews
@@ -7,6 +7,9 @@
    - Full language switch (RU/KZ)
    - Seller chooses realtor
    - Add listing with video/photo
+   - ✅ PLUS BUTTON: hidden for guests
+   - ✅ REALTOR COUNT: dynamic from API
+   - ✅ COLORS: warm green theme (#2D5A3D)
 ═══════════════════════════════════════════════════════════ */
 'use strict';
 
@@ -118,6 +121,11 @@ window.addEventListener('DOMContentLoaded', function () {
   var ns = document.getElementById('n-search');
   if (ns) ns.classList.add('on');
   updateAiraBadge();
+  // Скрыть + для гостей при загрузке
+  var plusWrap = document.getElementById('nav-plus-wrap');
+  if (plusWrap) {
+    plusWrap.style.display = (curUser && curUser.role === 'realtor' && curUser.verified) ? 'block' : 'none';
+  }
 });
 
 /* ── DATA FETCH ────────────────────────────────────────── */
@@ -138,7 +146,12 @@ function fetchCalendar() {
 function fetchRealtors(cb) {
   fetch('/api/realtors')
     .then(function(r){ return r.json(); })
-    .then(function(d){ realtors = d.realtors || []; if(cb) cb(); })
+    .then(function(d){ 
+      realtors = d.realtors || []; 
+      // Обновляем счёт риэлторов в Aira
+      updateAiraCount(d.count || realtors.length);
+      if(cb) cb(); 
+    })
     .catch(function(){ realtors = getFallbackRealtors(); if(cb) cb(); });
 }
 
@@ -156,13 +169,13 @@ function getFallbackListings() {
 
 function getFallbackRealtors() {
   return [
-    { id:'r1', name:'Айгерим Касымова', agency:'Century 21',  rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#1E2D5A', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true,
+    { id:'r1', name:'Айгерим Касымова', agency:'Century 21',  rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#2D5A3D', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true,
       reviewsList:[
         {author:'Алия С.',   stars:5, text:'Профессионал! Быстро нашла покупателя, все документы оформила чисто.',     date:'15 янв'},
         {author:'Марат Б.',  stars:5, text:'Рекомендую! Отличная работа, всегда на связи.',                             date:'3 янв'},
         {author:'Дина К.',   stars:4, text:'Хорошая работа, но немного задержалась с документами.',                     date:'28 дек'},
       ]},
-    { id:'r2', name:'Данияр Мусин',     agency:'Etagi',       rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F47B20', specialization:'Дома, коттеджи',    experience:7, badge:'',    verified:true,
+    { id:'r2', name:'Данияр Мусин',     agency:'Etagi',       rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F4A820', specialization:'Дома, коттеджи',    experience:7, badge:'',    verified:true,
       reviewsList:[
         {author:'Самал Т.',  stars:5, text:'Отличный риэлтор! Нашёл нам дом нашей мечты.',                              date:'10 янв'},
         {author:'Нурлан К.', stars:4, text:'Хорошая работа, рекомендую для покупки домов.',                             date:'5 янв'},
@@ -188,10 +201,10 @@ function getFallbackCal() {
   var t = new Date();
   function dt(d,h,m){ return new Date(t.getFullYear(),t.getMonth(),t.getDate()+d,h,m).toISOString(); }
   return [
-    {id:1,title:'Показ квартиры 3к Есиль', time:dt(0,10,0),  type:'showing',client:'Алия С.',      note:'Взять ключи от 401', color:'#F47B20'},
+    {id:1,title:'Показ квартиры 3к Есиль', time:dt(0,10,0),  type:'showing',client:'Алия С.',      note:'Взять ключи от 401', color:'#F4A820'},
     {id:2,title:'Звонок клиенту',          time:dt(0,14,30), type:'call',   client:'Данияр М.',     note:'Обсудить ипотеку Halyk', color:'#27AE60'},
-    {id:3,title:'Подписание договора',     time:dt(1,11,0),  type:'deal',   client:'Нурсулу К.',    note:'Проверить документы ЦОН', color:'#1E2D5A'},
-    {id:4,title:'Показ коммерции Байконыр',time:dt(1,15,0),  type:'showing',client:'Бизнес-клиент', note:'Взять план помещения', color:'#F47B20'},
+    {id:3,title:'Подписание договора',     time:dt(1,11,0),  type:'deal',   client:'Нурсулу К.',    note:'Проверить документы ЦОН', color:'#2D5A3D'},
+    {id:4,title:'Показ коммерции Байконыр',time:dt(1,15,0),  type:'showing',client:'Бизнес-клиент', note:'Взять план помещения', color:'#F4A820'},
     {id:5,title:'Встреча в агентстве',     time:dt(2,10,0),  type:'meeting',client:'Century 21',    note:'Новые объекты недели', color:'#9B59B6'},
   ];
 }
@@ -215,7 +228,8 @@ function buildFeedCard(l, idx) {
   var pr  = l.price ? fmtPrice(l.price) + ' ₸' : 'по договору';
   var rm  = l.rooms ? l.rooms + 'к · ' : '';
   var ini = (l.realtor || 'R').charAt(0);
-  var bgs = { apartment:'135deg,#1a1a40,#0d1b3e', house:'135deg,#1a2e1a,#0d2010', commercial:'135deg,#2e1a0d,#1a0d05', land:'135deg,#1a2e2e,#0d2020' };
+  // Зелёные градиенты вместо синих
+  var bgs = { apartment:'135deg,#2D5A3D,#3D7A5A', house:'135deg,#1a4d2e,#0d331a', commercial:'135deg,#4d3d1a,#33260d', land:'135deg,#1a4d4d,#0d3333' };
   var bg  = bgs[l.type] || bgs.apartment;
   var tags = (l.tags||[]).map(function(tg){ return '<span class="fc-chip'+(tg==='Обмен'?' exch':'')+'">'+tg+'</span>'; }).join('');
   var vbadge  = l.hasVideo ? '<div class="fc-vbadge"><i class="fas fa-play-circle"></i> Видео</div>' : '';
@@ -251,7 +265,7 @@ function buildFeedCard(l, idx) {
         '<div class="fc-price">'+pr+'</div>' +
         '<div class="fc-desc">'+esc(l.desc||'')+'</div>' +
         '<div class="fc-realtor">' +
-          '<div class="fc-r-ava" style="background:linear-gradient(135deg,#1E2D5A,#4A6FA5)">'+ini+'</div>' +
+          '<div class="fc-r-ava" style="background:linear-gradient(135deg,#2D5A3D,#3D7A5A)">'+ini+'</div>' +
           '<div><div class="fc-r-name">'+esc(l.realtor||'')+'</div><div class="fc-r-sub">★ '+l.rating+' · '+esc(l.agency||'')+'</div></div>' +
           '<button class="fc-r-btn" onclick="openDetail('+l.id+')">Подробнее</button>' +
         '</div>' +
@@ -317,8 +331,9 @@ function buildListCard(l) {
   var pr  = l.price ? fmtPrice(l.price) : '—';
   var rm  = l.rooms ? l.rooms+'-комнатная, ' : '';
   var ini = (l.realtor||'R').charAt(0);
-  var badgeColor = {Горящее:'#E74C3C',Топ:'#27AE60',Обмен:'#9B59B6'}[l.badge] || '#F47B20';
-  var rcol = l.realtorColor || '#1E2D5A';
+  // Зелёные цвета вместо синих
+  var badgeColor = {Горящее:'#E74C3C',Топ:'#27AE60',Обмен:'#9B59B6'}[l.badge] || '#F4A820';
+  var rcol = l.realtorColor || '#2D5A3D';
 
   var mediaHtml;
   if (l.hasVideo && l.videoId) {
@@ -372,14 +387,13 @@ function openDetail(id) {
   var arH = l.area  ? '<div class="det-cell"><div class="det-val">'+l.area+'</div><div class="det-lbl">'+t('area')+'</div></div>' : '';
   var exH = l.exchange ? '<div style="display:flex;align-items:center;gap:6px;padding:0 17px 8px;font-size:13px;color:#27AE60"><i class="fas fa-exchange-alt"></i><b>Рассмотрим обмен — выгодно в 2026!</b></div>' : '';
 
-  /* Video or photo */
   var visualHtml;
   if (l.hasVideo && l.videoId) {
     visualHtml =
       '<div class="det-visual" style="position:relative">' +
         '<img id="det-yt-thumb-'+l.id+'" src="https://img.youtube.com/vi/'+l.videoId+'/hqdefault.jpg" style="width:100%;height:100%;object-fit:cover">' +
         '<div id="det-yt-play-'+l.id+'" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.4);cursor:pointer" onclick="playDetailVideo('+l.id+',\''+l.videoId+'\')">' +
-          '<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:22px;color:#1E2D5A;margin-bottom:6px"><i class="fas fa-play" style="margin-left:3px"></i></div>' +
+          '<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:22px;color:#2D5A3D;margin-bottom:6px"><i class="fas fa-play" style="margin-left:3px"></i></div>' +
           '<div style="color:#fff;font-size:12px;font-weight:600">Смотреть видео-тур</div>' +
         '</div>' +
         '<div id="det-yt-frame-'+l.id+'" style="display:none;position:absolute;inset:0"></div>' +
@@ -388,7 +402,6 @@ function openDetail(id) {
     visualHtml = '<div class="det-visual"><div class="det-em-bg">'+em+'</div></div>';
   }
 
-  /* Photos */
   var photosHtml = '';
   if (l.photos && l.photos.length) {
     photosHtml = '<div class="det-photos">' +
@@ -396,7 +409,6 @@ function openDetail(id) {
     '</div>';
   }
 
-  /* Exchange match */
   var exchHtml = '';
   if (l.exchange) {
     var matches = listings.filter(function(x){ return x.exchange && x.id !== l.id; });
@@ -409,8 +421,8 @@ function openDetail(id) {
     }
   }
 
-  /* Realtor card */
-  var rColor = { r1:'#1E2D5A', r2:'#F47B20', r3:'#27AE60', r4:'#9B59B6', r5:'#E67E22' }[l.realtorId] || '#1E2D5A';
+  // Зелёный цвет вместо синего
+  var rColor = { r1:'#2D5A3D', r2:'#F4A820', r3:'#27AE60', r4:'#9B59B6', r5:'#E67E22' }[l.realtorId] || '#2D5A3D';
   var realtorHtml =
     '<div class="det-realtor" onclick="openRealtorProfile(\''+l.realtorId+'\')">'+
       '<div class="lf-ava" style="width:38px;height:38px;font-size:14px;background:'+rColor+'">'+esc((l.realtorFull||l.realtor||'R').charAt(0))+'</div>'+
@@ -533,7 +545,6 @@ function proposeExchangeDeal(fromId, toId) {
   var to   = listings.find(function(x){ return x.id === toId; });
   if (!from || !to) return;
   closeM('m-exchange');
-  /* Send message to Aira about exchange */
   if (curUser) {
     setTimeout(function(){
       addAiraThread('🔄 Обмен: '+esc(from.rooms?from.rooms+'к':'')+'·'+esc(from.district)+' ↔ '+esc(to.rooms?to.rooms+'к':'')+'·'+esc(to.district), 'exchange');
@@ -598,7 +609,6 @@ function hireRealtor(realtorId, realtorName) {
     }
   }
   closeM('m-hire');
-  /* Notify Aira */
   if (curUser) {
     addAiraThread('🤝 Назначен риэлтор: '+esc(realtorName)+' для моего объекта', 'listing');
   }
@@ -737,7 +747,6 @@ function submitRate() {
     r.reviewsList = r.reviewsList || [];
     r.reviewsList.unshift({author:author, stars:curStar, text:txt, date:'только что'});
     r.reviews++;
-    /* Recalculate rating */
     var total = r.reviewsList.reduce(function(s,rv){ return s+rv.stars; }, 0);
     r.rating  = Math.round(total / r.reviewsList.length * 10) / 10;
   }
@@ -759,7 +768,6 @@ function sendFlai() {
 function sendFlaiMsg(txt) {
   addMsg('flai-msgs', txt, true);
   var typing = addTyping('flai-msgs', 'F');
-  /* clear badge */
   var badge = document.getElementById('flai-badge');
   if (badge) badge.style.display = 'none';
   fetch('/api/chat/flai', {
@@ -807,8 +815,17 @@ function updateAiraBadge() {
     badge.style.cssText = 'background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#27AE60;font-weight:600';
     badge.textContent = '✓ '+curUser.name.split(' ')[0];
   } else {
-    badge.style.cssText = 'background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#F47B20;font-weight:600';
+    badge.style.cssText = 'background:rgba(244,168,32,.1);border:1px solid rgba(244,168,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600';
     badge.textContent = '🔒 Войдите';
+  }
+}
+
+// ✅ НОВАЯ ФУНКЦИЯ: динамический счёт риэлторов
+function updateAiraCount(count) {
+  var statusEl = document.getElementById('aira-status');
+  if (statusEl) {
+    statusEl.textContent = count + ' риэлторов онлайн';
+    statusEl.style.color = count > 0 ? 'var(--green)' : 'var(--orange)';
   }
 }
 
@@ -844,14 +861,14 @@ function sendAira() {
 function addAiraThread(txt, type) {
   var name   = curUser ? (curUser.name || 'Риэлтор') : 'Риэлтор';
   var ini    = name.charAt(0).toUpperCase();
-  var colors = ['linear-gradient(135deg,#1E2D5A,#4A6FA5)','linear-gradient(135deg,#F47B20,#FF9A3C)','linear-gradient(135deg,#27AE60,#2ECC71)'];
+  // Зелёные градиенты вместо синих
+  var colors = ['linear-gradient(135deg,#2D5A3D,#3D7A5A)','linear-gradient(135deg,#F4A820,#FFB366)','linear-gradient(135deg,#27AE60,#2ECC71)'];
   var rndC   = colors[Math.floor(Math.random()*colors.length)];
   var typeTag = '';
   if (type === 'exchange') typeTag = '<span style="background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:#27AE60;margin-left:5px">Обмен</span>';
-  if (type === 'question') typeTag = '<span style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:#F47B20;margin-left:5px">Вопрос</span>';
-  if (type === 'listing')  typeTag = '<span style="background:rgba(30,45,90,.1);border:1px solid rgba(30,45,90,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--navy);margin-left:5px">Объект</span>';
+  if (type === 'question') typeTag = '<span style="background:rgba(244,168,32,.1);border:1px solid rgba(244,168,32,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--orange);margin-left:5px">Вопрос</span>';
+  if (type === 'listing')  typeTag = '<span style="background:rgba(45,90,61,.1);border:1px solid rgba(45,90,61,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--navy);margin-left:5px">Объект</span>';
 
-  /* Simulate reply after 2s */
   var replyReplies = {
     listing:  ['🤝 Есть покупатель! Пишу в личку', '👍 Интересный объект! Комиссию делим?', '📞 Клиент готов к ипотеке, свяжемся?'],
     exchange: ['🔄 Есть похожий вариант! Обсудим', '💡 Хороший обмен! Клиент экономит налог', '✅ Подходящий объект для обмена нашёл!'],
@@ -886,7 +903,6 @@ function addAiraThread(txt, type) {
     '</div>';
   list.insertBefore(div, list.firstChild);
 
-  /* Simulate incoming reply */
   var repliesContainer = div.querySelector('[id^="aira-replies-"]');
   setTimeout(function(){
     if (repliesContainer) {
@@ -895,13 +911,12 @@ function addAiraThread(txt, type) {
     }
   }, 1800 + Math.random()*1200);
 
-  toast('✅ Отправлено в Aira — 47 риэлторов видят');
+  toast('✅ Отправлено в Aira — ' + (realtors.length || 47) + ' риэлторов видят');
 }
 
 function replyAira(btn) {
   var body = btn.closest('.th-body');
   if (!body) return;
-  /* Toggle reply form */
   var existing = body.querySelector('.aira-reply-form');
   if (existing) { existing.remove(); return; }
   var form = document.createElement('div');
@@ -1012,7 +1027,15 @@ function useAI() {
 }
 
 /* ── ADD LISTING ───────────────────────────────────────── */
-function openAddListing() { openM('m-add'); }
+// ✅ ФИКС: проверка прав перед открытием модалки
+function openAddListing() {
+  if (!curUser || curUser.role !== 'realtor' || !curUser.verified) {
+    toast('🔐 Только для верифицированных риэлторов');
+    openM('m-auth');
+    return;
+  }
+  openM('m-add');
+}
 
 function uploadMedia(type) {
   var input = document.createElement('input');
@@ -1040,7 +1063,6 @@ function submitListing() {
   if (!area  || isNaN(parseInt(area)))  { toast('⚠️ Укажите площадь'); return; }
   if (!price || isNaN(parseInt(price))) { toast('⚠️ Укажите цену'); return; }
 
-  /* Extract YouTube ID if URL provided */
   var videoId = '';
   if (videoU) {
     var ym = videoU.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -1074,11 +1096,9 @@ function submitListing() {
   listings.unshift(newL);
   renderListings(); renderFeed();
   closeM('m-add');
-  /* Reset form */
   ['a-area','a-price','a-desc','a-video'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
   var w = document.getElementById('ai-box-wrap'); if(w) w.style.display='none';
   toast('🚀 Объект опубликован! Виден в ленте.');
-  /* Post to Aira */
   if (curUser) {
     setTimeout(function(){
       addAiraThread('🏠 Новый объект: '+(rooms?rooms+'к ':'')+(type==='apartment'?'квартира':type==='house'?'дом':'коммерция')+', '+val('a-district')+', '+fmtPrice(parseInt(price))+' ₸', 'listing');
@@ -1093,7 +1113,8 @@ function renderCal() {
   var today  = new Date();
   var tom    = new Date(today); tom.setDate(tom.getDate()+1);
   var dStr   = today.toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});
-  var colors = {showing:'#F47B20', call:'#27AE60', deal:'#1E2D5A', meeting:'#9B59B6'};
+  // Зелёные цвета
+  var colors = {showing:'#F4A820', call:'#27AE60', deal:'#2D5A3D', meeting:'#9B59B6'};
   var icons  = {showing:'🏠', call:'📞', deal:'✍️', meeting:'🤝'};
 
   function sameDay(a,b){ return a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear(); }
@@ -1103,7 +1124,7 @@ function renderCal() {
   function evHtml(e) {
     var d   = new Date(e.time);
     var hm  = pad(d.getHours())+':'+pad(d.getMinutes());
-    var cl  = colors[e.type] || '#F47B20';
+    var cl  = colors[e.type] || '#F4A820';
     var ic  = icons[e.type]  || '📅';
     return '<div class="ev-card" onclick="editEvent('+e.id+')">'+
       '<div class="ev-time"><div class="ev-hm">'+hm+'</div></div>'+
@@ -1139,8 +1160,8 @@ function renderCal() {
 function renderRatingBlock() {
   var list = realtors.length ? realtors.slice().sort(function(a,b){ return b.rating-a.rating; }) : [
     {name:'Сауле Т.',   deals:68, rating:5.0, k:1, color:'#27AE60'},
-    {name:'Айгерим К.', deals:47, rating:4.9, k:2, color:'#1E2D5A'},
-    {name:'Данияр М.',  deals:32, rating:4.7, k:3, color:'#F47B20'},
+    {name:'Айгерим К.', deals:47, rating:4.9, k:2, color:'#2D5A3D'},
+    {name:'Данияр М.',  deals:32, rating:4.7, k:3, color:'#F4A820'},
     {name:'Асель Б.',   deals:38, rating:4.8, k:4, color:'#E67E22'},
     {name:'Нурлан А.',  deals:23, rating:4.6, k:5, color:'#9B59B6'},
   ];
@@ -1148,7 +1169,7 @@ function renderRatingBlock() {
   var maxDeals = Math.max.apply(null, list.map(function(r){ return r.deals||1; }));
   return list.slice(0,5).map(function(r, i) {
     var ico = medals[i] || '#'+(i+1);
-    var bg  = i===0?'#F47B20':i===1?'#95A5A6':i===2?'#E67E22':'var(--bg3)';
+    var bg  = i===0?'#F4A820':i===1?'#95A5A6':i===2?'#E67E22':'var(--bg3)';
     var tc  = i<=2 ? '#fff' : 'var(--t3)';
     var w   = Math.round((r.deals||1)/maxDeals*100);
     return '<div class="rank-card" onclick="'+(realtors.length?'openRealtorProfile(\''+r.id+'\')':'renderRealtors()')+'">' +
@@ -1214,17 +1235,17 @@ function renderProf() {
       '</div>'+
     '</div>'+
     '<div class="menu-sec"><div class="menu-lbl">Мои объекты</div>'+
-      mItem('🏠','rgba(244,123,32,.1)','Активные объекты',myListings.length+' опубликованы',"toast('📋 '+"+myListings.length+"+'  объектов активно')")+
+      mItem('🏠','rgba(244,168,32,.1)','Активные объекты',myListings.length+' опубликованы',"toast('📋 '+"+myListings.length+"+'  объектов активно')")+
       mItem('❤️','rgba(231,76,60,.1)', 'Избранное','Сохранённые объекты',"toast('❤️ Избранное — в разработке')")+
     '</div>'+
     '<div class="menu-sec"><div class="menu-lbl">Инструменты</div>'+
       mItem('📅','rgba(39,174,96,.1)', 'Планировщик','Показы и звонки',"go('s-cal');nav(null)")+
-      mItem('🏆','rgba(244,123,32,.1)','Рейтинг риэлторов','Моя позиция',"closeM('m-more');go('s-realtors');nav(null);renderRealtors()")+
+      mItem('🏆','rgba(244,168,32,.1)','Рейтинг риэлторов','Моя позиция',"closeM('m-more');go('s-realtors');nav(null);renderRealtors()")+
       mItem('🔄','rgba(39,174,96,.08)','Обмен недвижимостью','Актуальные запросы',"go('s-search');nav(document.getElementById('n-search'));setListTab('exch')")+
-      mItem('💡','rgba(244,123,32,.08)','Налоговый советник 2026','Обмен vs продажа',"toast('💡 С 2026 года срок без налога — 2 года!')")+
+      mItem('💡','rgba(244,168,32,.08)','Налоговый советник 2026','Обмен vs продажа',"toast('💡 С 2026 года срок без налога — 2 года!')")+
     '</div>'+
     '<div class="menu-sec"><div class="menu-lbl">Aira — коллеги</div>'+
-      mItem('💬','rgba(244,123,32,.1)','Чат риэлторов','47 коллег онлайн',"go('s-aira');nav(null)")+
+      mItem('💬','rgba(244,168,32,.1)','Чат риэлторов', (realtors.length || 47) + ' коллег онлайн',"go('s-aira');nav(null)")+
     '</div>'+
     '<div class="menu-sec"><div class="menu-lbl">Аккаунт</div>'+
       mItem('⚙️','rgba(100,100,200,.08)','Настройки','Профиль, уведомления',"editProfile()")+
@@ -1289,15 +1310,22 @@ function doLogout() {
   toast('👋 До встречи!');
 }
 
+// ✅ ФИКС: скрытие кнопки + для гостей
 function renderAuthSlot() {
   var slot = document.getElementById('auth-slot');
+  var plusWrap = document.getElementById('nav-plus-wrap');
   if (!slot) return;
+  
   if (curUser) {
     var ini = (curUser.name||'R').charAt(0).toUpperCase();
     var fn  = (curUser.name||'Профиль').split(' ')[0];
     slot.innerHTML = '<div class="u-chip" onclick="go(\'s-prof\');nav(null)"><div class="u-ava">'+ini+'</div><span class="u-nm">'+esc(fn)+'</span></div>';
+    // Скрываем + для не-риэлторов или не-верифицированных
+    if (plusWrap) plusWrap.style.display = (curUser.role === 'realtor' && curUser.verified) ? 'block' : 'none';
   } else {
     slot.innerHTML = '<button class="login-btn" onclick="openM(\'m-auth\')">Войти</button>';
+    // Скрываем + для гостей
+    if (plusWrap) plusWrap.style.display = 'none';
   }
 }
 
@@ -1353,13 +1381,11 @@ function applyLangUI() {
   if (ru) ru.classList.toggle('on', curLang==='ru');
   if (kz) kz.classList.toggle('on', curLang==='kz');
 
-  /* Update all data-ru/data-kz elements */
   document.querySelectorAll('[data-ru]').forEach(function(el) {
     var val = el.getAttribute('data-'+curLang);
     if (val) el.textContent = val;
   });
 
-  /* Update specific IDs */
   var map = {
     'tx-tagline':     t('tagline'),
     'tx-flai-sub':    t('flai_sub'),
@@ -1381,7 +1407,6 @@ function applyLangUI() {
     if (el) el.textContent = map[id];
   });
 
-  /* Buttons with id */
   var btns = {
     'tx-signin-btn':  t('signin_btn'),
     'tx-reg-btn':     t('reg_btn'),
@@ -1392,7 +1417,6 @@ function applyLangUI() {
     if (el) el.textContent = btns[id];
   });
 
-  /* innerHTML for hints */
   var hint = document.getElementById('tx-test-hint');
   if (hint) hint.innerHTML = t('test_hint');
   var reg = document.getElementById('tx-reg-hint');
@@ -1402,11 +1426,8 @@ function applyLangUI() {
   var haveAcc = document.getElementById('tx-have-acc');
   if (haveAcc) haveAcc.textContent = t('have_acc');
 
-  /* Flai welcome messages */
   var fw = document.getElementById('flai-welcome');
   if (fw) fw.innerHTML = t('flai_welcome');
-  var fn = fw && fw.parentNode && fw.parentNode.parentNode && fw.parentNode.parentNode.nextElementSibling;
-  /* Re-render lists with new language */
   renderListings();
 }
 
