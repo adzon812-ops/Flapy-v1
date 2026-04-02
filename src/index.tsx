@@ -17,7 +17,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors())
 app.use('/static/*', serveStatic({ root: './' }))
 
-// 🔍 ТЕСТОВЫЙ ENDPOINT - ПРОВЕРКА ПЕРЕМЕННЫХ
+// 🔍 ТЕСТОВЫЙ ENDPOINT
 app.get('/api/test', (c) => {
   return c.json({
     message: '✅ API is working!',
@@ -51,7 +51,7 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#2D5A3D"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 21V12h6v9" fill="white"/></svg>')
 })
 
-// 🔍 API: LISTINGS С ДЕТАЛЬНЫМИ ЛОГАМИ
+// 🔍 API: LISTINGS С FALLBACK ДАННЫМИ
 app.get('/api/listings', async (c) => {
   console.log('📡 [API] /api/listings called')
   
@@ -66,22 +66,104 @@ app.get('/api/listings', async (c) => {
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (error) {
-      console.error('❌ Supabase error:', error)
-      return c.json({ 
-        listings: [], 
-        error: error.message,
-        debug: {
-          code: error.code,
-          details: error.details,
-          hint: error.hint
+    // Если ошибка или нет данных — используем fallback
+    if (error || !data || data.length === 0) {
+      console.warn('⚠️ No data from Supabase, using fallback')
+      
+      // ТЕСТОВЫЕ ДАННЫЕ
+      const testData = [
+        {
+          id: 1,
+          type: 'apartment',
+          rooms: 3,
+          area: 85,
+          district: 'Есиль',
+          city: 'Астана',
+          price: 62000000,
+          exchange: false,
+          video_url: 'https://youtube.com/watch?v=tgbNymZ7vqY',
+          realtor_name: 'Айгерим К.',
+          realtor_id: 'r1',
+          rating: 4.9,
+          deals: 47,
+          agency: 'Century 21',
+          description: 'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.',
+          images: ['🛋️','🚿','🌇'],
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          type: 'apartment',
+          rooms: 2,
+          area: 65,
+          district: 'Сарыарка',
+          city: 'Астана',
+          price: 38000000,
+          exchange: true,
+          video_url: null,
+          realtor_name: 'Данияр М.',
+          realtor_id: 'r2',
+          rating: 4.7,
+          deals: 32,
+          agency: 'Etagi',
+          description: 'Уютная 2-комнатная. Рассмотрим обмен!',
+          images: ['🛋️','🚿'],
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 3,
+          type: 'house',
+          rooms: 5,
+          area: 220,
+          district: 'Алматинский',
+          city: 'Астана',
+          price: 150000000,
+          exchange: true,
+          video_url: 'https://youtube.com/watch?v=UxxajLWwzqY',
+          realtor_name: 'Сауле Т.',
+          realtor_id: 'r3',
+          rating: 5.0,
+          deals: 68,
+          agency: 'Royal Group',
+          description: 'Дом с участком 10 соток. Гараж на 2 машины, баня.',
+          images: ['🏡','🌳','🏊'],
+          status: 'active',
+          created_at: new Date().toISOString()
         }
-      }, 500)
+      ]
+      
+      const formatted = testData.map((l: any) => ({
+        id: l.id,
+        type: l.type || 'apartment',
+        rooms: l.rooms,
+        area: l.area,
+        district: l.district,
+        city: l.city,
+        price: l.price,
+        priceFormatted: new Intl.NumberFormat('ru-RU').format(l.price) + ' ₸',
+        exchange: l.exchange,
+        hasVideo: !!l.video_url,
+        videoId: l.video_url?.split('v=')[1] || '',
+        realtor: l.realtor_name || 'Риэлтор',
+        realtorId: l.realtor_id,
+        realtorFull: l.realtor_name,
+        rating: l.rating || 4.5,
+        deals: l.deals || 0,
+        agency: l.agency || 'Агентство',
+        tags: l.exchange ? ['Обмен'] : [],
+        badge: l.exchange ? 'Обмен' : 'Новое',
+        desc: l.description || 'Отличный объект!',
+        photos: l.images?.length ? l.images : ['🏠']
+      }))
+      
+      return c.json({ listings: formatted, source: 'fallback' })
     }
     
-    console.log(`✅ Loaded ${data?.length || 0} listings`)
+    console.log(`✅ Loaded ${data.length} listings from Supabase`)
     
-    const formatted = (data || []).map((l: any) => ({
+    const formatted = data.map((l: any) => ({
       id: l.id,
       type: l.type || 'apartment',
       rooms: l.rooms,
@@ -92,7 +174,7 @@ app.get('/api/listings', async (c) => {
       priceFormatted: new Intl.NumberFormat('ru-RU').format(l.price) + ' ₸',
       exchange: l.exchange,
       hasVideo: !!l.video_url,
-      videoId: l.video_url?.split('v=')[1] || l.video_url?.split('/').pop() || '',
+      videoId: l.video_url?.split('v=')[1] || '',
       realtor: l.realtor_name || 'Риэлтор',
       realtorId: l.realtor_id,
       realtorFull: l.realtor_name,
@@ -105,13 +187,12 @@ app.get('/api/listings', async (c) => {
       photos: l.images?.length ? l.images : ['🏠']
     }))
     
-    return c.json({ listings: formatted })
+    return c.json({ listings: formatted, source: 'supabase' })
   } catch (e: any) {
     console.error('💥 CRITICAL ERROR:', e)
     return c.json({ 
       listings: [], 
-      error: e.message,
-      stack: e.stack
+      error: e.message
     }, 500)
   }
 })
@@ -179,7 +260,16 @@ app.post('/api/chat/flai', async (c) => {
       }
     }
     
-    return c.json({ reply: getFlaiReply(message, lang), source: 'local' })
+    // Fallback ответы
+    const replies: Record<string, string> = {
+      'привет': '👋 Привет! Я Flai — ваш AI-помощник по недвижимости.',
+      'ипотека': '🏦 Работаем с Отбасы Банк, Halyk, Jusan. Ставки от 5%.',
+      'цена': '💰 Цена зависит от района. В Есиле 1к от 28 млн ₸.',
+      'обмен': '🔄 Обмен актуален в 2026! Освобождение от налога — 2 года.'
+    }
+    
+    const reply = replies[message.toLowerCase()] || '😊 Уточните вопрос, я помогу!'
+    return c.json({ reply, source: 'local' })
   } catch (e: any) {
     console.error('Chat error:', e)
     return c.json({ reply: 'Извините, произошла ошибка', source: 'error' }, 500)
@@ -255,7 +345,7 @@ app.post('/api/auth/register', async (c) => {
 // API: AI DESCRIBE
 app.post('/api/ai/describe', async (c) => {
   const { type, rooms, area, district, price, exchange } = await c.req.json()
-  const desc = generateAIDesc({ type, rooms, area, district, price, exchange })
+  const desc = `✨ ${rooms ? rooms+'-комнатная ' : ''}квартира${area ? ', '+area+' м²' : ''} в ${district||'Астане'}!\n\n🏆 Развитая инфраструктура · Рядом транспорт\n💰 Цена: ${price ? (Number(price)/1e6).toFixed(1)+' млн ₸' : 'по договору'}${exchange ? '\n🔄 Рассмотрим обмен' : ''}\n\n📍 ${district||'Есиль'}, ${'Астана'}\n📞 Звоните — покажу в любое удобное время!`
   return c.json({ description: desc })
 })
 
