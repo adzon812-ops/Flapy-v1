@@ -17,6 +17,19 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors())
 app.use('/static/*', serveStatic({ root: './' }))
 
+// 🔍 ТЕСТОВЫЙ ENDPOINT - ПРОВЕРКА ПЕРЕМЕННЫХ
+app.get('/api/test', (c) => {
+  return c.json({
+    message: '✅ API is working!',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasSupabaseUrl: !!c.env.SUPABASE_URL,
+      hasSupabaseKey: !!c.env.SUPABASE_ANON_KEY,
+      urlPreview: c.env.SUPABASE_URL ? c.env.SUPABASE_URL.substring(0, 40) + '...' : '❌ MISSING',
+    }
+  })
+})
+
 // 🔍 ФУНКЦИЯ С ЛОГАМИ
 function getSupabase(c: any) {
   const url = c.env.SUPABASE_URL || 'MISSING'
