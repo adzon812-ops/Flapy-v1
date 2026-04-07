@@ -8,7 +8,7 @@
    - Seller chooses realtor
    - Add listing with video/photo
 ═══════════════════════════════════════════════════════════ */
-'use strict';
+'use strict'; 
 
 /* ── STATE ─────────────────────────────────────────────── */
 var listings   = [];
