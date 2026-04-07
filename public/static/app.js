@@ -5,7 +5,7 @@
    - Rating system with reviews
    - Property exchange mechanics
    - Full language switch (RU/KZ)
-   - Seller chooses realtor
+   - Seller chooses realtor 
    - Add listing with video/photo
 ═══════════════════════════════════════════════════════════ */
 'use strict'; 
