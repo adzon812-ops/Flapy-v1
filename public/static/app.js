@@ -1420,6 +1420,122 @@ function toast(msg, ms) {
 }
 
 /* ── UTILS ─────────────────────────────────────────────── */
+/* ── НОВЫЕ ФУНКЦИИ ДЛЯ FLAPY v6.0 ─────────────────────────── */
+
+// Форматирование цены: 10000000 → 10 000 000
+function fmtPrice(p) {
+  return p.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+// Мягкая проверка авторизации
+function needAuth(cb) {
+  if (curUser) {
+    cb();
+  } else {
+    toast('🔐 Войдите, чтобы продолжить');
+    setTimeout(function() {
+      openM('m-auth');
+    }, 800);
+  }
+}
+
+// Pre-filled WhatsApp сообщение
+function goChat(listingId) {
+  var l = listings.find(function(x) { return x.id === listingId; });
+  if (!l) return;
+  
+  var msg = 'Здравствуйте! Интересует объект на Flapy:\n' +
+    (l.rooms ? l.rooms + '-комн., ' : '') +
+    l.district + ', ' +
+    fmtPrice(l.price) + ' ₸\n' +
+    'Когда можно посмотреть?';
+  
+  var phone = l.phone || '+77012345678';
+  var waUrl = 'https://wa.me/' + phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
+  window.open(waUrl, '_blank');
+  
+  toast('💬 Открыт чат с риэлтором');
+}
+
+// Обновленная submitListing с проверкой на риэлтора
+function submitListing() {
+  // Проверяем, что пользователь — риэлтор
+  if (!curUser || !curUser.verified) {
+    toast('⚠️ Публикация объектов доступна только верифицированным риэлторам');
+    openM('m-auth');
+    return;
+  }
+  
+  var type   = val('a-type')     || 'apartment';
+  var area   = val('a-area');
+  var price  = val('a-price');
+  var videoU = val('a-video');
+  
+  if (!area || isNaN(parseInt(area))) { 
+    toast('⚠️ Укажите площадь'); 
+    return; 
+  }
+  if (!price || isNaN(parseInt(price))) { 
+    toast('⚠️ Укажите цену'); 
+    return; 
+  }
+  
+  // Extract YouTube ID
+  var videoId = '';
+  if (videoU) {
+    var ym = videoU.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (ym) videoId = ym[1];
+  }
+  
+  var rooms = parseInt(val('a-rooms')) || 0;
+  var rName = curUser ? (curUser.name || 'Мой объект') : 'Мой объект';
+  
+  var newL = {
+    id:           Date.now(),
+    type:         type,
+    rooms:        rooms,
+    area:         parseInt(area),
+    district:     val('a-district') || 'Есиль',
+    city:         val('a-city')     || 'Астана',
+    price:        parseInt(price),
+    exchange:     (document.getElementById('a-exch')||{}).checked || false,
+    hasVideo:     !!videoId,
+    videoId:      videoId,
+    realtor:      rName.split(' ').slice(0,2).map(function(w,i) { return i===0?w:w.charAt(0)+'.'; }).join(' '),
+    realtorFull:  rName,
+    realtorId:    curUser ? curUser.id : 'u_new',
+    rating:       curUser ? (curUser.rating || 5.0) : 5.0,
+    deals:        curUser ? (curUser.deals || 0) : 0,
+    agency:       curUser ? (curUser.agency || 'Самозанятый') : 'Самозанятый',
+    tags:         [val('a-rooms')+'к', type==='house'?'Дом':'Квартира'],
+    badge:        'Новое',
+    desc:         val('a-desc') || 'Новый объект. Подробности по запросу.',
+    photos:       ['🛋️','🚿','🪟'],
+  };
+  
+  listings.unshift(newL);
+  renderListings();
+  renderFeed();
+  closeM('m-add');
+  
+  // Reset form
+  ['a-area','a-price','a-desc','a-video'].forEach(function(id) { 
+    var e = document.getElementById(id); 
+    if (e) e.value = ''; 
+  });
+  
+  var w = document.getElementById('ai-box-wrap'); 
+  if (w) w.style.display = 'none';
+  
+  toast('🚀 Объект опубликован! Виден в ленте.');
+  
+  // Post to Aira
+  if (curUser) {
+    setTimeout(function() {
+      addAiraThread('🏠 Новый объект: '+(rooms?rooms+'к ':'')+(type==='apartment'?'квартира':type==='house'?'дом':'коммерция')+', '+val('a-district')+', '+fmtPrice(parseInt(price))+' ₸', 'listing');
+    }, 800);
+  }
+}
 function val(id) { var e=document.getElementById(id); return e ? e.value.trim() : ''; }
 function esc(s)  { return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function pad(n)  { return String(n).padStart(2,'0'); }
