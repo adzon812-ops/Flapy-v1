@@ -8,7 +8,7 @@ app.use('/static/*', serveStatic({ root: './' }))
 
 app.get('/favicon.ico', (c) => {
   c.header('Content-Type', 'image/svg+xml')
-  return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#F97316"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
+  return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#FF9A3C"/><path d="M6 14L16 7l10 7v11H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/><circle cx="16" cy="14" r="2" fill="white"/></svg>')
 })
 
 // ─── API ROUTES ───────────────────────────────────────────────
@@ -65,11 +65,11 @@ function generateAIDesc(o: any): string {
 
 function getMockRealtors() {
   return [
-    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#1E2D5A', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true },
-    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F47B20', specialization:'Дома, коттеджи', experience:7, badge:'', verified:true },
-    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#27AE60', specialization:'Коммерция', experience:9, badge:'ТОП', verified:true },
-    { id:'r4', name:'Нурлан Ахметов', agency:'Самозанятый', rating:4.6, deals:23, reviews:12, phone:'+7 705 567 89 01', photo:'Н', color:'#9B59B6', specialization:'Обмен, любые', experience:3, badge:'', verified:true },
-    { id:'r5', name:'Асель Бекова', agency:'Etagi', rating:4.8, deals:38, reviews:19, phone:'+7 708 678 90 12', photo:'А', color:'#E67E22', specialization:'Новострой', experience:4, badge:'', verified:true },
+    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#5B8DBE', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true },
+    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#E8A56E', specialization:'Дома, коттеджи', experience:7, badge:'', verified:true },
+    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#7DBE8F', specialization:'Коммерция', experience:9, badge:'ТОП', verified:true },
+    { id:'r4', name:'Нурлан Ахметов', agency:'Самозанятый', rating:4.6, deals:23, reviews:12, phone:'+7 705 567 89 01', photo:'Н', color:'#B59BD4', specialization:'Обмен, любые', experience:3, badge:'', verified:true },
+    { id:'r5', name:'Асель Бекова', agency:'Etagi', rating:4.8, deals:38, reviews:19, phone:'+7 708 678 90 12', photo:'А', color:'#E8A56E', specialization:'Новострой', experience:4, badge:'', verified:true },
   ]
 }
 
@@ -88,11 +88,11 @@ function getMockCalendar() {
   const t = new Date()
   const dt = (d:number,h:number,m:number) => new Date(t.getFullYear(),t.getMonth(),t.getDate()+d,h,m).toISOString()
   return [
-    { id:1, title:'Показ квартиры 3к Есиль', time:dt(0,10,0), type:'showing', client:'Алия С.', note:'Взять ключи от 401', color:'#F47B20' },
-    { id:2, title:'Звонок клиенту', time:dt(0,14,30), type:'call', client:'Данияр М.', note:'Обсудить ипотеку Halyk', color:'#27AE60' },
-    { id:3, title:'Подписание договора', time:dt(1,11,0), type:'deal', client:'Нурсулу К.', note:'Проверить документы ЦОН', color:'#1E2D5A' },
-    { id:4, title:'Показ коммерции Байконыр', time:dt(1,15,0), type:'showing', client:'Бизнес-клиент', note:'Взять план помещения', color:'#F47B20' },
-    { id:5, title:'Встреча в агентстве', time:dt(2,10,0), type:'meeting', client:'Century 21', note:'Новые объекты недели', color:'#9B59B6' },
+    { id:1, title:'Показ квартиры 3к Есиль', time:dt(0,10,0), type:'showing', client:'Алия С.', note:'Взять ключи от 401', color:'#E8A56E' },
+    { id:2, title:'Звонок клиенту', time:dt(0,14,30), type:'call', client:'Данияр М.', note:'Обсудить ипотеку Halyk', color:'#7DBE8F' },
+    { id:3, title:'Подписание договора', time:dt(1,11,0), type:'deal', client:'Нурсулу К.', note:'Проверить документы ЦОН', color:'#5B8DBE' },
+    { id:4, title:'Показ коммерции Байконыр', time:dt(1,15,0), type:'showing', client:'Бизнес-клиент', note:'Взять план помещения', color:'#E8A56E' },
+    { id:5, title:'Встреча в агентстве', time:dt(2,10,0), type:'meeting', client:'Century 21', note:'Новые объекты недели', color:'#B59BD4' },
   ]
 }
 
@@ -104,7 +104,7 @@ function getFlaiReply(msg: string, lang: string): string {
   if (m.includes('ипотека') || m.includes('несие') || m.includes('кредит'))
     return kz ? '🏦 Отбасы Банк, Halyk Bank, Jusan Bank-пен жұмыс істейміз. Ставка жылдық 5%-дан. Нақты объект бойынша есептеп берейін?' : '🏦 Работаем с Отбасы Банк, Halyk Bank, Jusan Bank. Ставки от 5% годовых. Рассчитать ипотеку по конкретному объекту?'
   if (m.includes('цена') || m.includes('баға') || m.includes('сколько') || m.includes('стоимость'))
-    return kz ? '💰 Баға ауданға, ауданға және жай-күйіне байланысты. Есіл районда 1к — 28 млн-нан. Нақты баға беруді қалайсыз ба?' : '💰 Цена зависит от района, площади и состояния. В Есиле 1к от 28 млн ₸. Хотите оценку конкретного объекта?'
+    return kz ? '💰 Баға ауданға, ауданына және жай-күйіне байланысты. Есіл районда 1к — 28 млн-нан. Нақты баға беруді қалайсыз ба?' : '💰 Цена зависит от района, площади и состояния. В Есиле 1к от 28 млн ₸. Хотите оценку конкретного объекта?'
   if (m.includes('налог') || m.includes('салық'))
     return kz ? '💡 2026 жылдан: салықсыз мерзім — 2 жыл. Мерзімінен бұрын сатқанда 10–15%. Айырбас — үнемдеудің тиімді жолы!' : '💡 С 2026 года: срок без налога — 2 года. При продаже раньше — 10–15%. Обмен — выгодная альтернатива!'
   if (m.includes('показ') || m.includes('көрсет') || m.includes('посмотреть'))
@@ -151,6 +151,7 @@ return `<!DOCTYPE html>
         <rect class="window window-2" x="58" y="50" width="12" height="12" rx="2"/>
         <rect class="window window-3" x="44" y="70" width="12" height="12" rx="2"/>
         <rect class="door" x="42" y="75" width="16" height="15" rx="2"/>
+        <circle class="chimney-smoke" cx="70" cy="30" r="3"/>
       </svg>
     </div>
     <h1 class="splash-title">Flapy</h1>
@@ -175,7 +176,7 @@ return `<!DOCTYPE html>
 <!-- TOPBAR -->
 <div id="topbar">
   <div class="logo-row">
-    <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
+    <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
     <div class="logo-txt">Flapy<span class="logo-tag">™</span></div>
   </div>
   <div class="top-right">
@@ -223,7 +224,7 @@ return `<!DOCTYPE html>
         <div class="ch-name">Flai<span style="font-size:11px;font-weight:500;color:var(--t2)" id="tx-flai-sub">— умный помощник</span></div>
         <div class="ch-status" id="tx-flai-status">Онлайн · отвечает мгновенно</div>
       </div>
-      <div style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">✨ AI</div>
+      <div style="background:rgba(255,154,60,.15);border:1px solid rgba(255,154,60,.25);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">✨ AI</div>
     </div>
     <div class="quick-row" id="flai-chips">
       <div class="qchip" onclick="quickMsg('Помоги составить описание объекта')" data-ru="✍️ Описание" data-kz="✍️ Сипаттама">✍️ Описание</div>
@@ -265,9 +266,9 @@ return `<!DOCTYPE html>
       <div class="ch-ava aira" style="font-size:13px;font-weight:900">A</div>
       <div style="flex:1">
         <div class="ch-name">Aira<span style="font-size:12px;font-weight:500;color:var(--t2)" id="tx-aira-sub">— Чат риэлторов</span></div>
-        <div class="ch-status" style="color:var(--orange)">47 риэлторов онлайн</div>
+        <div class="ch-status" style="color:var(--green)">47 риэлторов онлайн</div>
       </div>
-      <div id="aira-status-badge" style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">🔒 Войдите</div>
+      <div id="aira-status-badge" style="background:rgba(255,154,60,.15);border:1px solid rgba(255,154,60,.25);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">🔒 Войдите</div>
     </div>
     <div class="aira-compose" id="aira-compose">
       <div class="compose-tabs">
@@ -281,7 +282,7 @@ return `<!DOCTYPE html>
       <div class="aira-list" id="aira-list">
         <div class="thread su">
           <div class="th-head" onclick="toggleThread(this)">
-            <div class="th-ava" style="background:linear-gradient(135deg,#1E2D5A,#4A6FA5)">А</div>
+            <div class="th-ava" style="background:linear-gradient(135deg,#5B8DBE,#7DB4D4)">А</div>
             <div style="flex:1">
               <div class="th-name">Айгерим К.<span class="th-time">10 мин</span></div>
               <div class="th-prev">🏠 Объект: 3к Есиль — ищу покупателя 🤝</div>
@@ -334,7 +335,7 @@ return `<!DOCTYPE html>
     <div class="notif-item su"><span class="notif-ico">🤖</span><div><div class="notif-txt"><b>Flai:</b> Показ через 30 мин! Не забудьте ключи 🔑</div><div><span class="n-new-dot"></span></div><div class="notif-time">только что</div></div></div>
   </div>
 </div>
-</div>
+</div><!-- /main -->
 
 <!-- BOTTOM NAV -->
 <div id="botbar">
