@@ -8,7 +8,7 @@ app.use('/static/*', serveStatic({ root: './' }))
 
 app.get('/favicon.ico', (c) => {
   c.header('Content-Type', 'image/svg+xml')
-  return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#FF9A3C"/><path d="M6 14L16 7l10 7v11H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/><circle cx="16" cy="14" r="2" fill="white"/></svg>')
+  return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 21V12h6v9" fill="white"/></svg>')
 })
 
 // ─── API ROUTES ───────────────────────────────────────────────
@@ -65,11 +65,11 @@ function generateAIDesc(o: any): string {
 
 function getMockRealtors() {
   return [
-    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#5B8DBE', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true },
-    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#E8A56E', specialization:'Дома, коттеджи', experience:7, badge:'', verified:true },
-    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#7DBE8F', specialization:'Коммерция', experience:9, badge:'ТОП', verified:true },
-    { id:'r4', name:'Нурлан Ахметов', agency:'Самозанятый', rating:4.6, deals:23, reviews:12, phone:'+7 705 567 89 01', photo:'Н', color:'#B59BD4', specialization:'Обмен, любые', experience:3, badge:'', verified:true },
-    { id:'r5', name:'Асель Бекова', agency:'Etagi', rating:4.8, deals:38, reviews:19, phone:'+7 708 678 90 12', photo:'А', color:'#E8A56E', specialization:'Новострой', experience:4, badge:'', verified:true },
+    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#1E2D5A', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true },
+    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F47B20', specialization:'Дома, коттеджи', experience:7, badge:'', verified:true },
+    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#27AE60', specialization:'Коммерция', experience:9, badge:'ТОП', verified:true },
+    { id:'r4', name:'Нурлан Ахметов', agency:'Самозанятый', rating:4.6, deals:23, reviews:12, phone:'+7 705 567 89 01', photo:'Н', color:'#9B59B6', specialization:'Обмен, любые', experience:3, badge:'', verified:true },
+    { id:'r5', name:'Асель Бекова', agency:'Etagi', rating:4.8, deals:38, reviews:19, phone:'+7 708 678 90 12', photo:'А', color:'#E67E22', specialization:'Новострой', experience:4, badge:'', verified:true },
   ]
 }
 
@@ -88,11 +88,11 @@ function getMockCalendar() {
   const t = new Date()
   const dt = (d:number,h:number,m:number) => new Date(t.getFullYear(),t.getMonth(),t.getDate()+d,h,m).toISOString()
   return [
-    { id:1, title:'Показ квартиры 3к Есиль', time:dt(0,10,0), type:'showing', client:'Алия С.', note:'Взять ключи от 401', color:'#E8A56E' },
-    { id:2, title:'Звонок клиенту', time:dt(0,14,30), type:'call', client:'Данияр М.', note:'Обсудить ипотеку Halyk', color:'#7DBE8F' },
-    { id:3, title:'Подписание договора', time:dt(1,11,0), type:'deal', client:'Нурсулу К.', note:'Проверить документы ЦОН', color:'#5B8DBE' },
-    { id:4, title:'Показ коммерции Байконыр', time:dt(1,15,0), type:'showing', client:'Бизнес-клиент', note:'Взять план помещения', color:'#E8A56E' },
-    { id:5, title:'Встреча в агентстве', time:dt(2,10,0), type:'meeting', client:'Century 21', note:'Новые объекты недели', color:'#B59BD4' },
+    { id:1, title:'Показ квартиры 3к Есиль', time:dt(0,10,0), type:'showing', client:'Алия С.', note:'Взять ключи от 401', color:'#F47B20' },
+    { id:2, title:'Звонок клиенту', time:dt(0,14,30), type:'call', client:'Данияр М.', note:'Обсудить ипотеку Halyk', color:'#27AE60' },
+    { id:3, title:'Подписание договора', time:dt(1,11,0), type:'deal', client:'Нурсулу К.', note:'Проверить документы ЦОН', color:'#1E2D5A' },
+    { id:4, title:'Показ коммерции Байконыр', time:dt(1,15,0), type:'showing', client:'Бизнес-клиент', note:'Взять план помещения', color:'#F47B20' },
+    { id:5, title:'Встреча в агентстве', time:dt(2,10,0), type:'meeting', client:'Century 21', note:'Новые объекты недели', color:'#9B59B6' },
   ]
 }
 
@@ -131,40 +131,15 @@ return `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#FFFBF7">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Flapy™ — Умный помощник по жилью</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
-<body>
-<!-- SPLASH SCREEN -->
-<div id="splash-screen">
-  <div class="splash-content">
-    <div class="splash-logo">
-      <svg class="splash-house" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path class="house-roof" d="M10 40 L50 10 L90 40"/>
-        <rect class="house-body" x="20" y="40" width="60" height="50" rx="4"/>
-        <rect class="window window-1" x="30" y="50" width="12" height="12" rx="2"/>
-        <rect class="window window-2" x="58" y="50" width="12" height="12" rx="2"/>
-        <rect class="window window-3" x="44" y="70" width="12" height="12" rx="2"/>
-        <rect class="door" x="42" y="75" width="16" height="15" rx="2"/>
-        <circle class="chimney-smoke" cx="70" cy="30" r="3"/>
-      </svg>
-    </div>
-    <h1 class="splash-title">Flapy</h1>
-    <p class="splash-subtitle">Добро пожаловать домой</p>
-    <div class="loading-dots">
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-    </div>
-  </div>
-</div>
 
-<div id="app-shell">...
 <!-- SPLASH SCREEN -->
 <div id="splash-screen">
   <div class="splash-content">
@@ -201,7 +176,7 @@ return `<!DOCTYPE html>
 <!-- TOPBAR -->
 <div id="topbar">
   <div class="logo-row">
-    <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
+    <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
     <div class="logo-txt">Flapy<span class="logo-tag">™</span></div>
   </div>
   <div class="top-right">
@@ -249,7 +224,7 @@ return `<!DOCTYPE html>
         <div class="ch-name">Flai<span style="font-size:11px;font-weight:500;color:var(--t2)" id="tx-flai-sub">— умный помощник</span></div>
         <div class="ch-status" id="tx-flai-status">Онлайн · отвечает мгновенно</div>
       </div>
-      <div style="background:rgba(255,154,60,.15);border:1px solid rgba(255,154,60,.25);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">✨ AI</div>
+      <div style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">✨ AI</div>
     </div>
     <div class="quick-row" id="flai-chips">
       <div class="qchip" onclick="quickMsg('Помоги составить описание объекта')" data-ru="✍️ Описание" data-kz="✍️ Сипаттама">✍️ Описание</div>
@@ -291,10 +266,11 @@ return `<!DOCTYPE html>
       <div class="ch-ava aira" style="font-size:13px;font-weight:900">A</div>
       <div style="flex:1">
         <div class="ch-name">Aira<span style="font-size:12px;font-weight:500;color:var(--t2)" id="tx-aira-sub">— Чат риэлторов</span></div>
-        <div class="ch-status" style="color:var(--green)">47 риэлторов онлайн</div>
+        <div class="ch-status" style="color:var(--orange)">47 риэлторов онлайн</div>
       </div>
-      <div id="aira-status-badge" style="background:rgba(255,154,60,.15);border:1px solid rgba(255,154,60,.25);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">🔒 Войдите</div>
+      <div id="aira-status-badge" style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">🔒 Войдите</div>
     </div>
+    <!-- Compose tabs -->
     <div class="aira-compose" id="aira-compose">
       <div class="compose-tabs">
         <button class="compose-tab on" id="ct-listing" onclick="setComposeTab('listing')" data-ru="🏠 Объект" data-kz="🏠 Объект">🏠 Объект</button>
@@ -307,7 +283,7 @@ return `<!DOCTYPE html>
       <div class="aira-list" id="aira-list">
         <div class="thread su">
           <div class="th-head" onclick="toggleThread(this)">
-            <div class="th-ava" style="background:linear-gradient(135deg,#5B8DBE,#7DB4D4)">А</div>
+            <div class="th-ava" style="background:linear-gradient(135deg,#1E2D5A,#4A6FA5)">А</div>
             <div style="flex:1">
               <div class="th-name">Айгерим К.<span class="th-time">10 мин</span></div>
               <div class="th-prev">🏠 Объект: 3к Есиль — ищу покупателя 🤝</div>
@@ -373,7 +349,7 @@ return `<!DOCTYPE html>
     <span data-ru="Лента" data-kz="Лента">Лента</span>
   </div>
   <div class="nav-plus-wrap">
-    <div class="nav-plus" onclick="needAuth(openAddListing)">
+    <div class="nav-plus" onclick="openAddListing()">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>
   </div>
@@ -555,7 +531,7 @@ return `<!DOCTYPE html>
       <div class="more-item" onclick="closeM('m-more');go('s-notif');nav(null)">
         <div class="more-ico">🔔</div><div class="more-name" data-ru="Уведомления" data-kz="Хабарламалар">Уведомления</div><div class="more-sub" data-ru="3 новых" data-kz="3 жаңа">3 новых</div>
       </div>
-      <div class="more-item" onclick="closeM('m-more');needAuth(openAddListing)">
+      <div class="more-item" onclick="closeM('m-more');openM('m-add')">
         <div class="more-ico">🏠</div><div class="more-name" data-ru="Добавить" data-kz="Қосу">Добавить</div><div class="more-sub" data-ru="Новый объект" data-kz="Жаңа объект">Новый объект</div>
       </div>
     </div>
@@ -593,22 +569,6 @@ return `<!DOCTYPE html>
 <div id="toast"></div>
 
 <script src="/static/app.js"></script>
-
-<!-- SPLASH SCREEN SCRIPT -->
-<script>
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    var splash = document.getElementById('splash-screen');
-    if (splash) {
-      splash.classList.add('hidden');
-      setTimeout(function() {
-        splash.style.display = 'none';
-      }, 800);
-    }
-  }, 2500);
-});
-</script>
-
 </div></div>
 </body>
 </html>`
