@@ -139,7 +139,32 @@ return `<!DOCTYPE html>
 <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
+<body>
+<!-- SPLASH SCREEN -->
+<div id="splash-screen">
+  <div class="splash-content">
+    <div class="splash-logo">
+      <svg class="splash-house" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path class="house-roof" d="M10 40 L50 10 L90 40"/>
+        <rect class="house-body" x="20" y="40" width="60" height="50" rx="4"/>
+        <rect class="window window-1" x="30" y="50" width="12" height="12" rx="2"/>
+        <rect class="window window-2" x="58" y="50" width="12" height="12" rx="2"/>
+        <rect class="window window-3" x="44" y="70" width="12" height="12" rx="2"/>
+        <rect class="door" x="42" y="75" width="16" height="15" rx="2"/>
+        <circle class="chimney-smoke" cx="70" cy="30" r="3"/>
+      </svg>
+    </div>
+    <h1 class="splash-title">Flapy</h1>
+    <p class="splash-subtitle">Добро пожаловать домой</p>
+    <div class="loading-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </div>
+</div>
 
+<div id="app-shell">...
 <!-- SPLASH SCREEN -->
 <div id="splash-screen">
   <div class="splash-content">
