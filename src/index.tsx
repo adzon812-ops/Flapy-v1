@@ -66,11 +66,13 @@ function getMockRealtors() {
 }
 
 function getMockListings() {
-  // Цена по умолчанию 10 000 000 для примера
   return [
-    { id:1, type:'apartment', rooms:3, area:85, district:'Бостандыкский', city:'Алматы', price:10000000, exchange:false, hasVideo:true, videoUrl:'https://tiktok.com/@example/video/123', realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Новострой'], badge:'Новое', desc:'Просторная 3-комнатная с панорамным видом. Свежий ремонт евро-класса.', photos:['🛋️','🛁','','🏗️'] },
+    { id:1, type:'apartment', rooms:3, area:85, district:'Бостандыкский', city:'Алматы', price:78500000, exchange:false, hasVideo:true, videoUrl:'https://tiktok.com/@example/video/1', realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Новострой'], badge:'Новое', desc:'Просторная 3-комнатная с панорамным видом. Свежий ремонт евро-класса.', photos:['🛋️','','🪟','️'] },
     { id:2, type:'apartment', rooms:3, area:82, district:'Есильский', city:'Астана', price:62000000, exchange:false, hasVideo:true, videoUrl:'https://youtube.com/watch?v=test', realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Горящее'], badge:'Горящее', desc:'Отличная 3-комнатная в новом ЖК. Полная отделка.', photos:['🛋️','','🌇'] },
-    { id:3, type:'house', rooms:5, area:220, district:'Алматинский', city:'Астана', price:150000000, exchange:true, hasVideo:true, videoUrl:'', realtor:'Сауле Т.', realtorId:'r3', realtorFull:'Сауле Тлеубекова', rating:5.0, deals:68, agency:'Royal Group', tags:['Обмен'], badge:'Обмен', desc:'Дом с участком 10 соток. Гараж на 2 машины.', photos:['🏡','🌳','🏊','🔥'] },
+    { id:3, type:'house', rooms:5, area:220, district:'Алматинский', city:'Астана', price:150000000, exchange:true, hasVideo:true, videoUrl:'https://tiktok.com/@example/video/2', realtor:'Сауле Т.', realtorId:'r3', realtorFull:'Сауле Тлеубекова', rating:5.0, deals:68, agency:'Royal Group', tags:['Обмен'], badge:'Обмен', desc:'Дом с участком 10 соток. Гараж на 2 машины, баня.', photos:['🏡','','🏊',''] },
+    { id:4, type:'commercial', rooms:0, area:120, district:'Байконыр', city:'Астана', price:65000000, exchange:false, hasVideo:false, videoUrl:'', realtor:'Нурлан А.', realtorId:'r4', realtorFull:'Нурлан Ахметов', rating:4.6, deals:23, agency:'Самозанятый', tags:['Инвест'], badge:'Топ', desc:'Помещение первой линии, высокий трафик.', photos:['🏪','📐','🔌'] },
+    { id:5, type:'apartment', rooms:2, area:65, district:'Сарыарка', city:'Астана', price:38000000, exchange:true, hasVideo:false, videoUrl:'', realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Обмен'], badge:'Обмен', desc:'Уютная 2-комнатная в тихом дворе. Рассмотрим обмен!', photos:['🛋️','🚿'] },
+    { id:6, type:'apartment', rooms:1, area:42, district:'Есиль', city:'Астана', price:29000000, exchange:false, hasVideo:true, videoUrl:'https://tiktok.com/@example/video/3', realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Студия'], badge:'Новое', desc:'Стильная студия со смарт-дизайном.', photos:['🛋️',''] },
   ]
 }
 
@@ -80,6 +82,9 @@ function getMockCalendar() {
   return [
     { id:1, title:'Показ квартиры 3к Есиль', time:dt(0,10,0), type:'showing', client:'Алия С.', note:'Взять ключи от 401', color:'#F47B20' },
     { id:2, title:'Звонок клиенту', time:dt(0,14,30), type:'call', client:'Данияр М.', note:'Обсудить ипотеку Halyk', color:'#27AE60' },
+    { id:3, title:'Подписание договора', time:dt(1,11,0), type:'deal', client:'Нурсулу К.', note:'Проверить документы ЦОН', color:'#1E2D5A' },
+    { id:4, title:'Показ коммерции Байконыр', time:dt(1,15,0), type:'showing', client:'Бизнес-клиент', note:'Взять план помещения', color:'#F47B20' },
+    { id:5, title:'Встреча в агентстве', time:dt(2,10,0), type:'meeting', client:'Century 21', note:'Новые объекты недели', color:'#9B59B6' },
   ]
 }
 
@@ -98,7 +103,7 @@ return `<!DOCTYPE html>
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 <style>
 /* ════════════════════════════════════════════════════
-   FLAPY v5.2 — Fixed Loader & TikTok Support
+   FLAPY v5.3 — Final Fix (No Flai, Fixed Profile)
 ════════════════════════════════════════════════════ */
 :root{ --white:#FFFFFF; --bg:#F5F5F7; --bg2:#FFFFFF; --bg3:#F0F0F5; --navy:#1E2D5A; --navy2:#2E4A85; --orange:#F47B20; --orange2:#FF9A3C; --green:#27AE60; --red:#E74C3C; --purple:#9B59B6; --t1:#1A1A2E; --t2:#6B7280; --t3:#9CA3AF; --brd:#E5E7EB; --brd2:#D1D5DB; --sh:0 1px 4px rgba(0,0,0,.06),0 2px 10px rgba(0,0,0,.05); --sh2:0 4px 20px rgba(0,0,0,.1); --nav-h:56px; --bot-h:64px; --r:14px; --max:480px; }
 [data-theme=dark]{ --bg:#0F0F1A; --bg2:#161626; --bg3:#1E1E35; --t1:#F0F0FF; --t2:#9090C0; --t3:#5A5A80; --brd:rgba(255,255,255,.1); --brd2:rgba(255,255,255,.15); }
@@ -188,7 +193,7 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .cta-msg{background:var(--bg3); color:var(--t1);border:1px solid var(--brd2)}
 /* Feed (TikTok style) */
 #s-feed{scroll-snap-type:y mandatory;overflow-y:scroll;background:#111}
-.fcard{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:linear-gradient(135deg,#1a1a2e,#16213e)}
+.fcard{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:linear-gradient(135deg,#1a1a40,#0d1b3e)}
 .fc-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:280px;opacity:.04;filter:blur(8px);pointer-events:none}
 .fc-overlay{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,.15) 0%,transparent 25%,rgba(0,0,0,.35) 55%,rgba(0,0,0,.85) 100%)}
 .fc-video{position:absolute;inset:0;z-index:1}
@@ -216,17 +221,13 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .fc-r-sub{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px}
 .fc-r-btn{margin-left:auto;background:rgba(255,255,255,.2);border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,.3); cursor:pointer;transition:all .15s}
 .fc-r-btn:active{background:var(--orange); border-color:var(--orange)}
-/* Chat (Aira only) */
+/* Aira Chat */
 .chat-wrap{display:flex;flex-direction:column;height:100%}
 .chat-header{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--brd);padding:10px 14px;display:flex;align-items:center;gap:10px}
 .ch-ava{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff}
 .ch-ava.aira{background:linear-gradient(135deg,var(--orange),var(--orange2))}
 .ch-name{font-size:15px;font-weight:700;color:var(--t1)}
 .ch-status{font-size:11px;color:var(--orange);font-weight:500;display:flex;align-items:center;gap:4px;margin-top:1px}
-.quick-row{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;gap:6px;overflow-x:auto;padding:8px 13px}
-.qchip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--brd2); color:var(--t2); background:none;transition:all .15s;white-space:nowrap}
-.qchip:active{background:var(--navy);color:#fff;border-color:var(--navy)}
-[data-theme=dark] .qchip:active{background:var(--orange); border-color:var(--orange)}
 .chat-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding:12px 13px}
 [data-theme=light] .chat-body{background:#EFE5D5}
 [data-theme=dark] .chat-body{background:#0A0F1E}
@@ -251,7 +252,6 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 [data-theme=dark] .ci:focus{border-color:var(--orange)}
 .ci::placeholder{color:var(--t3)}
 .send-btn{width:40px;height:40px;border-radius:50%;flex-shrink:0;background:var(--orange);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s}
-[data-theme=dark] .send-btn{background:var(--orange)}
 .send-btn:active{transform:scale(1.1)}
 /* Realtors screen */
 .rel-wrap{padding:13px}
@@ -273,12 +273,6 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .rc-stat{font-size:10px;color:var(--t3);display:flex;align-items:center;gap:2px}
 .rc-stat b{color:var(--t1);font-size:11px}
 .rc-spec{font-size:10px;color:var(--t2); background:var(--bg3);border-radius:5px;padding:2px 7px;margin-top:4px;display:inline-block}
-.rc-actions{display:flex;gap:7px;margin-top:9px}
-.rc-btn{flex:1;padding:8px;border-radius:9px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:opacity .15s}
-.rc-btn:active{opacity:.8}
-.rc-call{background:var(--navy);color:#fff}
-[data-theme=dark] .rc-call{background:var(--orange)}
-.rc-write{background:var(--bg3); color:var(--t1);border:1px solid var(--brd2)}
 /* Calendar */
 .cal-wrap{padding:13px}
 .cal-title{font-size:21px;font-weight:800;margin-bottom:2px}
@@ -321,7 +315,6 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .notif-txt{font-size:12px;line-height:1.55;color:var(--t2)}
 .notif-txt b{color:var(--t1)}
 .notif-time{font-size:10px;color:var(--t3);margin-top:3px}
-.n-new-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);display:inline-block;margin-right:4px;vertical-align:middle}
 /* Bottom Nav */
 #botbar{position:absolute;bottom:0;left:0;right:0;height:var(--bot-h);z-index:50;background:var(--bg2);border-top:1px solid var(--brd);display:flex;align-items:center;padding:0 8px 6px}
 .nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--t3);padding:6px 2px;border-radius:10px;position:relative;transition:color .15s}
@@ -334,7 +327,6 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .nav-plus{width:48px;height:48px;border-radius:14px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(30,45,90,.3); cursor:pointer;transition:transform .15s}
 [data-theme=dark] .nav-plus{background:var(--orange);box-shadow:0 4px 16px rgba(244,123,32,.3)}
 .nav-plus:active{transform:scale(1.05)}
-.n-badge{position:absolute;top:3px;right:calc(50% - 18px);width:15px;height:15px;border-radius:8px;background:var(--red);color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg2)}
 /* Modals */
 .overlay{position:absolute;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
 .overlay.on{opacity:1;pointer-events:all}
@@ -472,7 +464,25 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
     <div class="chat-body" id="aira-msgs" style="padding:10px 0">
       <div class="msg-date">Только для верифицированных риэлторов</div>
       <div class="aira-list" id="aira-list">
-        <!-- Threads will be injected here -->
+        <div class="thread su">
+          <div class="th-head" onclick="toggleThread(this)">
+            <div class="th-ava" style="background:linear-gradient(135deg,#1E2D5A,#4A6FA5)">А</div>
+            <div style="flex:1">
+              <div class="th-name">Айгерим К. <span class="th-time">10 мин</span></div>
+              <div class="th-prev">🏠 Объект: 3к Есиль — ищу покупателя 🤝</div>
+            </div>
+            <i class="fas fa-chevron-down" style="color:var(--t3);font-size:11px;transition:transform .2s"></i>
+          </div>
+          <div class="th-body">
+            <div class="prop-tag"><i class="fas fa-home"></i> 3к · 85м² · 85 млн · Есиль</div>
+            <p style="font-size:12px;color:var(--t2);margin-bottom:8px">Клиент готов к ипотеке Halyk Bank. Комиссию делим 50/50 🤝 Срочно!</p>
+            <div style="font-size:12px;color:var(--green);margin-bottom:8px">✓ Данияр М.: Есть покупатель! Пишу в личку</div>
+            <div style="display:flex;gap:6px">
+              <button onclick="replyAira(this)" style="padding:5px 10px;border-radius:7px;background:var(--navy);color:#fff;font-size:11px;font-weight:600;cursor:pointer">💬 Ответить</button>
+              <button onclick="callRealtor('+7 701 234 56 78')" style="padding:5px 10px;border-radius:7px;background:var(--bg3);color:var(--t1);font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--brd2)">📞 Позвонить</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="chat-input-row">
@@ -502,11 +512,12 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 <div id="s-notif" class="scr">
   <div class="notif-wrap">
     <div class="notif-title" id="tx-notif-title">Уведомления</div>
-    <div class="notif-item su"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>Aira:</b> Данияр М. ответил на ваш объект — есть покупатель!</div><div><span class="n-new-dot"></span></div><div class="notif-time">10 мин назад</div></div></div>
+    <div class="notif-item su"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>Aira:</b> Данияр М. ответил на ваш объект — есть покупатель!</div><div><span class="n-new-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-right:4px"></span></div><div class="notif-time">10 мин назад</div></div></div>
   </div>
 </div>
 </div><!-- /main -->
-<!-- BOTTOM NAV -->
+
+<!-- BOTTOM NAV (Dynamic Visibility) -->
 <div id="botbar">
   <div class="nav-it on" id="n-search" onclick="go('s-search');nav(this)">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
@@ -516,16 +527,19 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
     <span data-ru="Лента" data-kz="Лента">Лента</span>
   </div>
-  <div class="nav-plus-wrap">
+  <!-- Скрыто по умолчанию, покажется если залогинен -->
+  <div class="nav-plus-wrap" id="nav-plus-wrap" style="display:none">
     <div class="nav-plus" onclick="needAuth(() => openAddListing())">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>
   </div>
-  <div class="nav-it" id="n-more" onclick="needAuth(() => showMore())">
+  <!-- Скрыто по умолчанию, покажется если залогинен -->
+  <div class="nav-it" id="n-more" onclick="needAuth(() => showMore())" style="display:none">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
     <span data-ru="Ещё" data-kz="Тағы">Ещё</span>
   </div>
 </div>
+
 <!-- ════════════ MODALS ════════════════════ -->
 <!-- AUTH -->
 <div class="overlay" id="m-auth" onclick="closeOvl(event,'m-auth')">
@@ -634,6 +648,12 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
     <div class="more-grid">
       <div class="more-item" onclick="closeM('m-more');go('s-aira');nav(null)">
         <div class="more-ico">💬</div><div class="more-name" data-ru="Aira" data-kz="Aira">Aira</div><div class="more-sub" data-ru="Чат риэлторов" data-kz="Риэлтор чаты">Чат риэлторов</div>
+      </div>
+      <div class="more-item" onclick="closeM('m-more');go('s-realtors');nav(null);renderRealtors()">
+        <div class="more-ico">🏆</div><div class="more-name" data-ru="Риэлторы" data-kz="Риэлторлар">Риэлторы</div><div class="more-sub" data-ru="Рейтинг" data-kz="Рейтинг">Рейтинг</div>
+      </div>
+      <div class="more-item" onclick="closeM('m-more');go('s-cal');nav(null)">
+        <div class="more-ico">📅</div><div class="more-name" data-ru="Календарь" data-kz="Күнтізбе">Календарь</div><div class="more-sub" data-ru="Расписание" data-kz="Кесте">Расписание</div>
       </div>
       <div class="more-item" onclick="closeM('m-more');go('s-prof');nav(null)">
         <div class="more-ico">👤</div><div class="more-name" data-ru="Профиль" data-kz="Профиль">Профиль</div><div class="more-sub" data-ru="Мой аккаунт" data-kz="Аккаунтым">Мой аккаунт</div>
