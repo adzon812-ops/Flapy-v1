@@ -135,7 +135,7 @@ function getMockRealtors() {
 
 function getMockListings() {
   return [
-    { id:1, type:'apartment', rooms:3, area:85, district:'Есильский', city:'Астана', price:62000000, exchange:false, hasVideo:true, videoId:'tgbNymZ7vqY', realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Горящее'], badge:'Горящее', desc:'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.', photos:['🛋️','🚿','🌇'], tiktok:'@realtor_astana' },
+    { id:1, type:'apartment', rooms:3, area:85, district:'Есильский', city:'Астана', price:62000000, exchange:false, hasVideo:true, videoId:'tgbNymZ7vqY', realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Горящее'], badge:'Горящее', desc:'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.', photos:['🛋️','','🌇'], tiktok:'@realtor_astana' },
     { id:2, type:'house', rooms:5, area:220, district:'Алматинский', city:'Астана', price:150000000, exchange:true, hasVideo:true, videoId:'UxxajLWwzqY', realtor:'Сауле Т.', realtorId:'r3', realtorFull:'Сауле Тлеубекова', rating:5.0, deals:68, agency:'Royal Group', tags:['Обмен'], badge:'Обмен', desc:'Дом с участком 10 соток. Гараж на 2 машины, баня. Рассмотрим обмен!', photos:['🏡','🌳','🏊'], tiktok:'@saule_realty' },
     { id:3, type:'apartment', rooms:2, area:65, district:'Сарыарка', city:'Астана', price:38000000, exchange:true, hasVideo:false, videoId:'', realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Обмен'], badge:'Обмен', desc:'Уютная 2-комнатная в тихом дворе. Рядом школа, детский сад.', photos:['🛋️','🚿'], tiktok:'' },
   ]
@@ -290,14 +290,10 @@ return `<!DOCTYPE html>
 <div id="s-prof" class="scr"><div class="prof-wrap" id="prof-body"></div></div>
 
 <!-- NOTIFICATIONS -->
-<div id="s-notif" class="scr">
-  <div class="notif-wrap">
-    <div class="notif-title" id="tx-notif-title">Уведомления</div>
-    <div class="notif-item su"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>Aira:</b> Данияр М. ответил на ваш объект — есть покупатель!</div><div><span class="n-new-dot"></span></div><div class="notif-time">10 мин назад</div></div></div>
-    <div class="notif-item su"><span class="notif-ico">❤️</span><div><div class="notif-txt">3 человека добавили ваш объект в избранное</div><div class="notif-time">сегодня</div></div></div>
-    <div class="notif-item su" style="border-color:rgba(249,115,22,.25)"><span class="notif-ico">💡</span><div><div class="notif-txt" style="color:var(--orange)">Клиент держит квартиру менее 2 лет — предложите обмен для экономии налога!</div><div class="notif-time">совет дня</div></div></div>
-  </div>
-</div>
+<div id="s-notif" class="scr"><div class="notif-wrap" id="notif-body"></div></div>
+
+<!-- SETTINGS -->
+<div id="s-settings" class="scr"><div class="settings-wrap" id="settings-body"></div></div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -315,9 +311,9 @@ return `<!DOCTYPE html>
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>
   </div>
-  <div class="nav-it" id="n-calc" onclick="openCalc()">
-    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
-    <span>Калькулятор</span>
+  <div class="nav-it" id="n-aira" onclick="go('s-aira');nav(this)">
+    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>Aira</span>
   </div>
   <div class="nav-it" id="n-more" onclick="showMore()">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
@@ -453,26 +449,13 @@ return `<!DOCTYPE html>
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title" id="tx-menu-title">Меню</div>
-    <div class="more-grid">
-      <div class="more-item" onclick="closeM('m-more');go('s-aira');nav(null)">
-        <div class="more-ico">💬</div><div class="more-name" data-ru="Aira" data-kz="Aira">Aira</div><div class="more-sub" data-ru="Чат коллег" data-kz="Риэлтор чаты">Чат коллег</div>
-      </div>
-      <div class="more-item" onclick="closeM('m-more');go('s-cal');nav(null)">
-        <div class="more-ico">📅</div><div class="more-name" data-ru="Календарь" data-kz="Күнтізбе">Календарь</div><div class="more-sub" data-ru="Расписание" data-kz="Кесте">Расписание</div>
-      </div>
-      <div class="more-item" onclick="closeM('m-more');go('s-prof');nav(null)">
-        <div class="more-ico">👤</div><div class="more-name" data-ru="Профиль" data-kz="Профиль">Профиль</div><div class="more-sub" data-ru="Мой аккаунт" data-kz="Аккаунтым">Мой аккаунт</div>
-      </div>
-      <div class="more-item" onclick="closeM('m-more');go('s-notif');nav(null)">
-        <div class="more-ico">🔔</div><div class="more-name" data-ru="Уведомления" data-kz="Хабарламалар">Уведомления</div><div class="more-sub" data-ru="3 новых" data-kz="3 жаңа">3 новых</div>
-      </div>
-    </div>
-    <div style="padding:0 17px 17px;font-size:10px;color:var(--t3);text-align:center">
-      <a href="/privacy" style="color:var(--t3)">Политика конфиденциальности</a> · 
-      <a href="/terms" style="color:var(--t3)">Пользовательское соглашение</a> · 
-      <span>© 2026 Flapy Team</span>
-    </div>
+    <div id="m-more-body"></div>
   </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="m-settings" onclick="closeOvl(event,'m-settings')">
+  <div class="sheet" id="settings-body"></div>
 </div>
 
 <!-- TOAST -->
