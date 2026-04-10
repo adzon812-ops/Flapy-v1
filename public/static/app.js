@@ -1,15 +1,13 @@
 /* ═══════════════════════════════════════════════════════════
-   FLAPY  app.js  v6.0  — Warm Community Edition
-   - Welcome animation
+   FLAPY app.js v6.1 — Warm Community Edition
    - Soft onboarding (browse first, choose role later)
-   - Aira chat only (Flai hidden but preserved)
+   - Flai hidden (code preserved), Aira only
+   - TikTok oEmbed integration
    - Exchange checkbox in add form
-   - TikTok oEmbed integration (free)
-   - OSM + Leaflet map (free)
-   - Watermark on photos
-   - Legal: privacy, terms, report button
    - Guest vs realtor menu
-   - No ratings pressure, warm microcopy
+   - Watermarks on photos
+   - OSM + Leaflet map (free)
+   - Legal pages (privacy, terms)
 ═══════════════════════════════════════════════════════════ */
 'use strict';
 
@@ -258,8 +256,8 @@ function fetchRealtors(cb) {
 /* ── FALLBACK DATA ─────────────────────────────────────── */
 function getFallbackListings() {
   return [
-    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:62000000,exchange:false,hasVideo:true,videoId:'tgbNymZ7vqY',realtor:'Данияр М.',realtorId:'r2',realtorFull:'Данияр Мусин',rating:4.7,deals:32,agency:'Etagi',tags:['Горящее'],badge:'Горящее',desc:'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.',photos:['🛋️','🚿','🌇'],tiktok:'@realtor_astana'},
-    {id:2,type:'house',rooms:5,area:220,district:'Алматинский',city:'Астана',price:150000000,exchange:true,hasVideo:true,videoId:'UxxajLWwzqY',realtor:'Сауле Т.',realtorId:'r3',realtorFull:'Сауле Тлеубекова',rating:5.0,deals:68,agency:'Royal Group',tags:['Обмен'],badge:'Обмен',desc:'Дом с участком 10 соток. Гараж на 2 машины, баня. Рассмотрим обмен!',photos:['🏡','🌳','🏊'],tiktok:'@saule_realty'},
+    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:62000000,exchange:false,hasVideo:true,videoId:'tgbNymZ7vqY',realtor:'Данияр М.',realtorId:'r2',realtorFull:'Данияр Мусин',rating:4.7,deals:32,agency:'Etagi',tags:['Горящее'],badge:'Горящее',desc:'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.',photos:['🛋️','🚿',''],tiktok:'@realtor_astana'},
+    {id:2,type:'house',rooms:5,area:220,district:'Алматинский',city:'Астана',price:150000000,exchange:true,hasVideo:true,videoId:'UxxajLWwzqY',realtor:'Сауле Т.',realtorId:'r3',realtorFull:'Сауле Тлеубекова',rating:5.0,deals:68,agency:'Royal Group',tags:['Обмен'],badge:'Обмен',desc:'Дом с участком 10 соток. Гараж на 2 машины, баня. Рассмотрим обмен!',photos:['🏡','','🏊'],tiktok:'@saule_realty'},
     {id:3,type:'apartment',rooms:2,area:65,district:'Сарыарка',city:'Астана',price:38000000,exchange:true,hasVideo:false,videoId:'',realtor:'Айгерим К.',realtorId:'r1',realtorFull:'Айгерим Касымова',rating:4.9,deals:47,agency:'Century 21',tags:['Обмен'],badge:'Обмен',desc:'Уютная 2-комнатная в тихом дворе. Рядом школа, детский сад.',photos:['🛋️','🚿'],tiktok:''},
   ];
 }
@@ -1037,7 +1035,7 @@ function setLang(lang) {
   curLang = lang;
   localStorage.setItem('fp_lang', lang);
   applyLangUI();
-  toast(lang === 'kz' ? '🇰🇿 Қазақ тілі' : '🇷🇺 Русский');
+  toast(lang === 'kz' ? '🇰 Қазақ тілі' : '🇷🇺 Русский');
 }
 
 function applyLangUI() {
