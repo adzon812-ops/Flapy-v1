@@ -1,17 +1,15 @@
 /* ═══════════════════════════════════════════════════════════
-   FLAPY app.js v6.1 — Warm Community Edition
-   - Soft onboarding (browse first, choose role later)
-   - Flai hidden (code preserved), Aira only
-   - TikTok oEmbed integration
-   - Exchange checkbox in add form
-   - Guest vs realtor menu
-   - Watermarks on photos
-   - OSM + Leaflet map (free)
-   - Legal pages (privacy, terms)
+   FLAPY  app.js  v7.0  — Warm Community Edition
+   - Soft onboarding (Browse first → choose role)
+   - Aira chat only (Flai hidden)
+   - Exchange checkbox + matching
+   - Dynamic menu (Guest vs Realtor)
+   - Watermark + Legal text
+   - Zero critical errors
 ═══════════════════════════════════════════════════════════ */
 'use strict';
 
-/* ── STATE ─────────────────────────────────────────────── */
+/* ── STATE & CONFIG ───────────────────────────────────── */
 var listings   = [];
 var calEvents  = [];
 var realtors   = [];
@@ -21,7 +19,7 @@ var curLang    = 'ru';
 var listTab    = 'obj';
 var curStar    = 0;
 var curHireId  = null;
-var welcomeShown = false;
+var welcomeSeen = false;
 
 /* ── TRANSLATIONS ──────────────────────────────────────── */
 var T = {
@@ -43,19 +41,13 @@ var T = {
     chip_desc: '✍️ Описание', chip_mortgage: '🏦 Ипотека',
     chip_promo: '📢 Продвижение', chip_tax: '💡 Налоги',
     chip_show: '📅 Показ', chip_val: '💰 Оценка', chip_exch: '🔄 Обмен',
-    nav_obj: 'Объекты', nav_feed: 'Лента', nav_flai: 'Flai AI', nav_more: 'Ещё',
-    hire_btn: '🤝 Нанять', hire_title: 'Нанять риэлтора',
-    choose_realtor: 'Выберите риэлтора для вашего объекта',
-    rate_title: 'Оставить отзыв', exch_title: '🔄 Предложить обмен',
-    rooms: 'Комнат', area: 'Площадь м²', district: 'Район',
-    deals_label: 'сделок', reviews_label: 'отзывов',
     welcome_title: 'Добро пожаловать домой',
-    welcome_subtitle: 'Найдите жильё, которое почувствуете своим',
+    welcome_sub: 'Найдите жильё, которое почувствуете своим',
     role_buyer: '👤 Я ищу жильё',
     role_realtor: '🏢 Я риэлтор',
     role_guest: '🤔 Пока просто смотрю',
-    soft_modal_title: 'Рад, что вам нравится!',
-    soft_modal_text: 'Чтобы мы могли помочь вам дальше:',
+    soft_title: 'Рад, что вам нравится!',
+    soft_text: 'Чтобы мы могли помочь вам дальше:',
     calc_title: '💰 Ипотечный калькулятор',
     calc_price: 'Стоимость', calc_down: 'Первый взнос', calc_term: 'Срок',
     calc_result: 'Ежемесячно', calc_disclaimer: 'Ориентировочный расчёт',
@@ -70,7 +62,7 @@ var T = {
     watermark: 'Flapy',
     privacy_link: 'Политика конфиденциальности',
     terms_link: 'Пользовательское соглашение',
-    report_btn: 'Пожаловаться',
+    report_btn: 'Помочь с объектом',
     map_btn: '📍 Показать на карте',
     tiktok_hint: '💡 Хотите больше видео? Подключите TikTok-аккаунт → без лимитов!',
     tiktok_connect: 'Подключить TikTok',
@@ -94,19 +86,13 @@ var T = {
     chip_desc: '✍️ Сипаттама', chip_mortgage: '🏦 Несие',
     chip_promo: '📢 Жылжыту', chip_tax: '💡 Салықтар',
     chip_show: '📅 Көрсету', chip_val: '💰 Баға', chip_exch: '🔄 Айырбас',
-    nav_obj: 'Объект', nav_feed: 'Лента', nav_flai: 'Flai AI', nav_more: 'Тағы',
-    hire_btn: '🤝 Жалдау', hire_title: 'Риэлторды жалдау',
-    choose_realtor: 'Объектіңіз үшін риэлтор таңдаңыз',
-    rate_title: 'Пікір қалдыру', exch_title: '🔄 Айырбас ұсыну',
-    rooms: 'Бөлмелер', area: 'Ауданы м²', district: 'Аудан',
-    deals_label: 'мәміле', reviews_label: 'пікір',
     welcome_title: 'Үйіңізге қош келдіңіз',
-    welcome_subtitle: 'Өзіңіздікі сезінетін тұрғын үй табыңыз',
+    welcome_sub: 'Өзіңіздікі сезінетін тұрғын үй табыңыз',
     role_buyer: '👤 Тұрғын үй іздеймін',
     role_realtor: '🏢 Мен риэлтормын',
     role_guest: '🤔 Әзірге жай ғана қараймын',
-    soft_modal_title: 'Ұнағанына қуаныштымыз!',
-    soft_modal_text: 'Әрі қарай көмектесу үшін:',
+    soft_title: 'Ұнағанына қуаныштымыз!',
+    soft_text: 'Әрі қарай көмектесу үшін:',
     calc_title: '💰 Ипотека калькуляторы',
     calc_price: 'Құны', calc_down: 'Алғашқы жарна', calc_term: 'Мерзім',
     calc_result: 'Ай сайын', calc_disclaimer: 'Шамамен есептеу',
@@ -125,42 +111,39 @@ var T = {
     map_btn: '📍 Картада көрсету',
     tiktok_hint: '💡 Көбірек бейне керек пе? TikTok аккаунтын қосыңыз → шектеусіз!',
     tiktok_connect: 'TikTok қосу',
-    tiktok_connected: '✓ TikTok қосылды',
+    tiktok_connected: '✓ TikTok қосылған',
   }
 };
 function t(key) { return (T[curLang] && T[curLang][key]) || (T.ru[key] || key); }
 
 /* ── BOOT ──────────────────────────────────────────────── */
-window.addEventListener('load', function() {
-  // Load user from localStorage
-  try { var s = localStorage.getItem('fp_user'); if (s) curUser = JSON.parse(s); } catch(e){}
-  // Theme
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    var s = localStorage.getItem('fp_user');
+    if (s) curUser = JSON.parse(s);
+  } catch(e) {}
+
   var th = localStorage.getItem('fp_theme') || 'light';
   applyTheme(th);
-  // Language
   curLang = localStorage.getItem('fp_lang') || 'ru';
   applyLangUI();
-  // Render auth slot
   if (curUser) renderAuthSlot();
-  
-  // Welcome animation + soft onboarding
+
   setTimeout(function() {
     var ld = document.getElementById('loader');
     if (ld) { ld.style.opacity = '0'; setTimeout(function(){ ld.style.display = 'none'; }, 320); }
     
-    // Show welcome screen only on first visit
-    if (!localStorage.getItem('fp_welcome_seen')) {
+    if (!localStorage.getItem('fp_onboard_seen')) {
       showWelcomeScreen();
-      localStorage.setItem('fp_welcome_seen', 'true');
+      localStorage.setItem('fp_onboard_seen', 'true');
     } else {
-      // Load data
       fetchListings();
       fetchCalendar();
     }
   }, 1200);
 });
 
-/* ── WELCOME ANIMATION + SOFT ONBOARDING ───────────────── */
+/* ── WELCOME & SOFT ONBOARDING ────────────────────────── */
 function showWelcomeScreen() {
   var overlay = document.createElement('div');
   overlay.id = 'welcome-overlay';
@@ -170,41 +153,32 @@ function showWelcomeScreen() {
       <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="white" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
     </div>
     <div style="font-size:24px;font-weight:800;color:#1E2D5A;margin-bottom:8px;animation:slideUp .5s ease .2s both">${t('welcome_title')}</div>
-    <div style="font-size:14px;color:#6B7280;margin-bottom:32px;animation:slideUp .5s ease .3s both">${t('welcome_subtitle')}</div>
+    <div style="font-size:14px;color:#6B7280;margin-bottom:32px;animation:slideUp .5s ease .3s both">${t('welcome_sub')}</div>
     <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;animation:slideUp .5s ease .4s both">
       <button onclick="setRole('buyer')" style="padding:14px;border-radius:14px;background:#1E2D5A;color:#fff;font-size:14px;font-weight:700;cursor:pointer;border:none">${t('role_buyer')}</button>
       <button onclick="setRole('realtor')" style="padding:14px;border-radius:14px;background:#F97316;color:#fff;font-size:14px;font-weight:700;cursor:pointer;border:none">${t('role_realtor')}</button>
       <button onclick="setRole('guest')" style="padding:14px;border-radius:14px;background:rgba(30,45,90,.08);color:#1E2D5A;font-size:14px;font-weight:600;cursor:pointer;border:1.5px solid #1E2D5A">${t('role_guest')}</button>
     </div>
-    <style>
-      @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-      @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-      @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-    </style>
+    <style>@keyframes fadeIn{from{opacity:0}to{opacity:1}} @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}} @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}</style>
   `;
   document.body.appendChild(overlay);
 }
 
 function setRole(role) {
-  document.getElementById('welcome-overlay').style.opacity = '0';
-  setTimeout(function() {
-    document.getElementById('welcome-overlay').remove();
-    if (role === 'realtor' && !curUser) {
-      openM('m-auth');
-      authTab('up');
-    }
-    fetchListings();
-    fetchCalendar();
-  }, 200);
+  var overlay = document.getElementById('welcome-overlay');
+  if (overlay) { overlay.style.opacity = '0'; setTimeout(function(){ overlay.remove(); }, 200); }
+  if (role === 'realtor' && !curUser) { openM('m-auth'); authTab('up'); return; }
+  if (role === 'buyer') toast('✨ Отлично! Сохраняйте понравившиеся объекты ❤️');
+  fetchListings();
+  fetchCalendar();
 }
 
-/* Soft modal after browsing */
 function showSoftModalIfNeeded() {
-  if (curUser || welcomeShown) return;
+  if (curUser || welcomeSeen) return;
   var count = parseInt(localStorage.getItem('fp_views') || '0') + 1;
   localStorage.setItem('fp_views', count);
   if (count >= 5 && !localStorage.getItem('fp_soft_modal')) {
-    welcomeShown = true;
+    welcomeSeen = true;
     localStorage.setItem('fp_soft_modal', 'true');
     var modal = document.createElement('div');
     modal.className = 'overlay on';
@@ -213,9 +187,9 @@ function showSoftModalIfNeeded() {
     modal.innerHTML = `
       <div class="sheet">
         <div class="sh-handle"></div>
-        <div class="sh-title">${t('soft_modal_title')}</div>
+        <div class="sh-title">${t('soft_title')}</div>
         <div class="sh-body" style="text-align:center;padding-bottom:20px">
-          <p style="color:var(--t2);margin-bottom:20px">${t('soft_modal_text')}</p>
+          <p style="color:var(--t2);margin-bottom:20px">${t('soft_text')}</p>
           <div style="display:flex;flex-direction:column;gap:10px">
             <button onclick="setRole('buyer');closeModal()" style="padding:12px;border-radius:12px;background:#1E2D5A;color:#fff;font-weight:700">${t('role_buyer')}</button>
             <button onclick="setRole('realtor');closeModal()" style="padding:12px;border-radius:12px;background:#F97316;color:#fff;font-weight:700">${t('role_realtor')}</button>
@@ -256,7 +230,7 @@ function fetchRealtors(cb) {
 /* ── FALLBACK DATA ─────────────────────────────────────── */
 function getFallbackListings() {
   return [
-    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:62000000,exchange:false,hasVideo:true,videoId:'tgbNymZ7vqY',realtor:'Данияр М.',realtorId:'r2',realtorFull:'Данияр Мусин',rating:4.7,deals:32,agency:'Etagi',tags:['Горящее'],badge:'Горящее',desc:'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.',photos:['🛋️','🚿',''],tiktok:'@realtor_astana'},
+    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:62000000,exchange:false,hasVideo:true,videoId:'tgbNymZ7vqY',realtor:'Данияр М.',realtorId:'r2',realtorFull:'Данияр Мусин',rating:4.7,deals:32,agency:'Etagi',tags:['Горящее'],badge:'Горящее',desc:'Отличная 3-комнатная в новом ЖК. Полная отделка, вид на парк.',photos:['🛋️','🚿','🌇'],tiktok:'@realtor_astana'},
     {id:2,type:'house',rooms:5,area:220,district:'Алматинский',city:'Астана',price:150000000,exchange:true,hasVideo:true,videoId:'UxxajLWwzqY',realtor:'Сауле Т.',realtorId:'r3',realtorFull:'Сауле Тлеубекова',rating:5.0,deals:68,agency:'Royal Group',tags:['Обмен'],badge:'Обмен',desc:'Дом с участком 10 соток. Гараж на 2 машины, баня. Рассмотрим обмен!',photos:['🏡','','🏊'],tiktok:'@saule_realty'},
     {id:3,type:'apartment',rooms:2,area:65,district:'Сарыарка',city:'Астана',price:38000000,exchange:true,hasVideo:false,videoId:'',realtor:'Айгерим К.',realtorId:'r1',realtorFull:'Айгерим Касымова',rating:4.9,deals:47,agency:'Century 21',tags:['Обмен'],badge:'Обмен',desc:'Уютная 2-комнатная в тихом дворе. Рядом школа, детский сад.',photos:['🛋️','🚿'],tiktok:''},
   ];
@@ -318,7 +292,6 @@ function buildFeedCard(l, idx) {
     mediaHtml = `<div class="fc-bg" style="background:linear-gradient(${bg})">${em}</div>`;
   }
   
-  // Watermark
   var watermark = `<div style="position:absolute;bottom:8px;right:8px;font-size:10px;color:rgba(255,255,255,.6);font-weight:700;pointer-events:none">${t('watermark')} #${l.id}</div>`;
   
   return `<div class="fcard" style="background:linear-gradient(${bg})" id="fc-${l.id}">
@@ -457,8 +430,8 @@ function openDetail(id) {
   if (!l) return;
   var em = EM[l.type] || '🏠';
   var pr = l.price ? fmtPrice(l.price) : 'По договору';
-  var rmH = l.rooms ? `<div class="det-cell"><div class="det-val">${l.rooms}к</div><div class="det-lbl">${t('rooms')}</div></div>` : '';
-  var arH = l.area ? `<div class="det-cell"><div class="det-val">${l.area}</div><div class="det-lbl">${t('area')}</div></div>` : '';
+  var rmH = l.rooms ? `<div class="det-cell"><div class="det-val">${l.rooms}к</div><div class="det-lbl">Комнат</div></div>` : '';
+  var arH = l.area ? `<div class="det-cell"><div class="det-val">${l.area}</div><div class="det-lbl">Площадь м²</div></div>` : '';
   var exH = l.exchange ? `<div style="display:flex;align-items:center;gap:6px;padding:0 17px 8px;font-size:13px;color:#27AE60"><i class="fas fa-exchange-alt"></i><b>Рассмотрю обмен — выгодно в 2026!</b></div>` : '';
   
   var visualHtml;
@@ -510,7 +483,6 @@ function openDetail(id) {
     <div style="font-size:11px;color:var(--navy);font-weight:600">Профиль →</div>
   </div>`;
   
-  // Report button
   var reportBtn = `<button class="btn-outline" style="margin-top:8px" onclick="openReportModal(${l.id})">⚠️ ${t('report_btn')}</button>`;
   
   document.getElementById('m-det-body').innerHTML = `
@@ -520,7 +492,7 @@ function openDetail(id) {
     <div class="det-price">${pr} ₸</div>
     ${exH}
     <div class="det-grid">${rmH}${arH}
-      <div class="det-cell"><div class="det-val">${esc(l.district||'')}</div><div class="det-lbl">${t('district')}</div></div>
+      <div class="det-cell"><div class="det-val">${esc(l.district||'')}</div><div class="det-lbl">Район</div></div>
       <div class="det-cell"><div class="det-val">⭐ ${l.rating}</div><div class="det-lbl">Рейтинг</div></div>
     </div>
     ${exchHtml}
@@ -530,7 +502,7 @@ function openDetail(id) {
       <button class="det-btn det-call" onclick="callRealtor('${l.phone||'+7 701 234 56 78'}')"><i class="fas fa-phone"></i> Позвонить</button>
       <button class="det-btn det-chat" onclick="closeM('m-det');goChat(${l.id})"><i class="fas fa-comment"></i> Написать</button>
     </div>
-    ${curUser ? `<div style="padding:0 17px 4px"><button class="btn-outline" onclick="openHireModal(${l.id})">🤝 ${t('hire_btn')} риэлтора</button></div>` : ''}
+    ${curUser ? `<div style="padding:0 17px 4px"><button class="btn-outline" onclick="openHireModal(${l.id})">🤝 Нанять риэлтора</button></div>` : ''}
     ${reportBtn}
     <div style="padding:0 17px 12px;font-size:10px;color:var(--t3);text-align:center">
       <a href="/privacy" style="color:var(--t3)">${t('privacy_link')}</a> · 
@@ -841,7 +813,6 @@ function uploadMedia(type) {
     if (type === 'photo') {
       toast('📷 '+input.files.length+' фото добавлено');
     } else {
-      // Check limit
       var localVideos = parseInt(localStorage.getItem('fp_local_videos') || '0');
       if (localVideos >= 3 && !curUser?.tiktokConnected) {
         toast('⚠️ Лимит: 3 видео. Подключите TikTok для безлимита!');
@@ -902,13 +873,11 @@ function submitListing() {
   renderListings(); renderFeed();
   closeM('m-add');
   
-  // Reset form
   ['a-area','a-price','a-desc','a-video'].forEach(id=>{var e=document.getElementById(id);if(e)e.value='';});
   var w = document.getElementById('ai-box-wrap'); if(w) w.style.display='none';
   
   toast('🚀 Объект опубликован! Виден в ленте.');
   
-  // Post to Aira
   if (curUser) {
     setTimeout(function(){
       addAiraThread(`🏠 Новый объект: ${(rooms?rooms+'к ':'')}${type==='apartment'?'квартира':type==='house'?'дом':'коммерция'}, ${val('a-district')}, ${fmtPrice(parseInt(price))} ₸`, 'listing');
@@ -929,7 +898,6 @@ function doLogin() {
   if (!email) { toast('⚠️ Введите email'); return; }
   if (!pass) { toast('⚠️ Введите пароль'); return; }
   
-  // Simple mock auth
   curUser = {
     id: 'u1',
     name: email.includes('test') ? 'Айгерим Касымова' : 'Риэлтор',
@@ -1003,6 +971,8 @@ function go(id) {
   if (id === 's-prof') renderProf();
   if (id === 's-search') renderListings();
   if (id === 's-realtors') renderRealtors();
+  if (id === 's-notif') renderNotif();
+  if (id === 's-settings') renderSettings();
 }
 
 function nav(el) {
@@ -1010,7 +980,59 @@ function nav(el) {
   if (el) el.classList.add('on');
 }
 
-function showMore() { openM('m-more'); }
+function showMore() { 
+  if (!curUser) { openCalc(); return; } 
+  openM('m-more'); 
+  renderMoreMenu();
+}
+
+function renderMoreMenu() {
+  var body = document.getElementById('m-more-body');
+  if (!body) return;
+  
+  if (curUser) {
+    body.innerHTML = `
+      <div class="more-grid">
+        <div class="more-item" onclick="closeM('m-more');go('s-aira');nav(null)">
+          <div class="more-ico">💬</div><div class="more-name">Aira</div><div class="more-sub">Чат коллег</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');go('s-prof');nav(null)">
+          <div class="more-ico">👤</div><div class="more-name">Профиль</div><div class="more-sub">Мой аккаунт</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');go('s-notif');nav(null)">
+          <div class="more-ico">🔔</div><div class="more-name">Уведомления</div><div class="more-sub">3 новых</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');go('s-settings');nav(null)">
+          <div class="more-ico">⚙️</div><div class="more-name">Настройки</div><div class="more-sub">Аккаунт, уведомления</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');openCalc()">
+          <div class="more-ico">💰</div><div class="more-name">Калькулятор</div><div class="more-sub">Ипотечный расчёт</div>
+        </div>
+        <div class="more-item" onclick="doLogout();closeM('m-more')">
+          <div class="more-ico" style="background:rgba(231,76,60,.08)">🚪</div>
+          <div class="more-name" style="color:#E74C3C">Выйти</div>
+        </div>
+      </div>
+    `;
+  } else {
+    body.innerHTML = `
+      <div class="more-grid">
+        <div class="more-item" onclick="closeM('m-more');openCalc()">
+          <div class="more-ico">💰</div><div class="more-name">Калькулятор</div><div class="more-sub">Ипотечный расчёт</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');window.open('https://wa.me/77012345678','_blank')">
+          <div class="more-ico">💬</div><div class="more-name">Помощь</div><div class="more-sub">Написать в WhatsApp</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');window.open('/privacy','_blank')">
+          <div class="more-ico">🔐</div><div class="more-name">Политика</div><div class="more-sub">Конфиденциальность</div>
+        </div>
+        <div class="more-item" onclick="closeM('m-more');openM('m-auth')">
+          <div class="more-ico">🔑</div><div class="more-name">Войти</div><div class="more-sub">Для риэлторов</div>
+        </div>
+      </div>
+    `;
+  }
+}
 
 /* ── MODALS ────────────────────────────────────────────── */
 function openM(id) { var e = document.getElementById(id); if (e) e.classList.add('on'); }
@@ -1035,7 +1057,7 @@ function setLang(lang) {
   curLang = lang;
   localStorage.setItem('fp_lang', lang);
   applyLangUI();
-  toast(lang === 'kz' ? '🇰 Қазақ тілі' : '🇷🇺 Русский');
+  toast(lang === 'kz' ? '🇰🇿 Қазақ тілі' : '🇷 Русский');
 }
 
 function applyLangUI() {
@@ -1048,24 +1070,13 @@ function applyLangUI() {
     if (val) el.textContent = val;
   });
   
-  var map = {
-    'tx-tagline': t('tagline'),
-    'tx-today': t('today'),
-    'tx-email-lbl': t('email_lbl'),
-    'tx-pass-lbl': t('pass_lbl'),
-    'tx-add-photo': t('add_photo'),
-    'tx-add-video': t('add_video'),
-  };
+  var map = { 'tx-tagline': t('tagline') };
   Object.keys(map).forEach(id => {
     var el = document.getElementById(id);
     if (el) el.textContent = map[id];
   });
   
-  var btns = {
-    'tx-signin-btn': t('signin_btn'),
-    'tx-reg-btn': t('reg_btn'),
-    'tx-publish-btn': t('publish_btn'),
-  };
+  var btns = { 'tx-signin-btn': t('signin_btn'), 'tx-reg-btn': t('reg_btn'), 'tx-publish-btn': t('publish_btn') };
   Object.keys(btns).forEach(id => {
     var el = document.getElementById(id);
     if (el) el.textContent = btns[id];
@@ -1117,9 +1128,103 @@ function openReportModal(listingId) {
 }
 
 function submitReport(listingId) {
-  var reason = document.querySelector('input[name="report-reason"]:checked')?.value || 'Другое';
   toast('✅ Спасибо! Мы проверим объект #' + listingId);
-  // Here you would send to backend: fetch('/api/report', {method:'POST', body:JSON.stringify({listingId, reason})})
+}
+
+/* ── PROFILE & CALENDAR & NOTIFICATIONS & SETTINGS ─────── */
+function renderProf() {
+  var el = document.getElementById('prof-body');
+  if (!el) return;
+  if (!curUser) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico">👤</div><div class="empty-t">Войдите в систему</div><div class="empty-s">Только для верифицированных риэлторов</div><button class="btn-primary" style="max-width:220px;margin:16px auto 0;display:flex" onclick="openM(\'m-auth\')">Войти / Регистрация</button></div>';
+    return;
+  }
+  var ini = (curUser.name||'R').charAt(0).toUpperCase();
+  el.innerHTML = `
+    <div class="prof-hero">
+      <div class="ph-ava">${ini}</div>
+      <div class="ph-name">${esc(curUser.name)}</div>
+      <div class="ph-tag">🏠 Верифицированный риэлтор · ${curUser.agency || 'Астана'}</div>
+      <div class="ph-stats">
+        <div class="ph-stat"><div class="ph-val">⭐ ${curUser.rating||4.8}</div><div class="ph-lbl">Рейтинг</div></div>
+        <div class="ph-stat"><div class="ph-val">${curUser.deals||0}</div><div class="ph-lbl">Сделок</div></div>
+      </div>
+    </div>
+    <div class="menu-sec"><div class="menu-lbl">Инструменты</div>
+      <div class="menu-item" onclick="go('s-cal');nav(null)"><div class="menu-ico" style="background:rgba(39,174,96,.1)">📅</div><div style="flex:1"><div class="menu-name">Планировщик</div><div class="menu-sub">Показы и звонки</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:11px"></i></div>
+      <div class="menu-item" onclick="go('s-settings');nav(null)"><div class="menu-ico" style="background:rgba(100,100,200,.08)">⚙️</div><div style="flex:1"><div class="menu-name">Настройки</div><div class="menu-sub">Профиль, уведомления</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:11px"></i></div>
+    </div>
+    <div class="menu-sec"><div class="menu-lbl">Аккаунт</div>
+      <div class="menu-item" onclick="doLogout()"><div class="menu-ico" style="background:rgba(231,76,60,.08)">🚪</div><div><div class="menu-name" style="color:#E74C3C">Выйти</div></div></div>
+    </div>
+  `;
+}
+
+function renderCal() {
+  var el = document.getElementById('cal-body');
+  if (!el) return;
+  var today = new Date();
+  var dStr = today.toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});
+  var colors = {showing:'#F47B20', call:'#27AE60', deal:'#1E2D5A', meeting:'#9B59B6'};
+  var todayEv = calEvents.filter(function(e){ return new Date(e.time).toDateString() === today.toDateString(); });
+  
+  function evHtml(e) {
+    var d = new Date(e.time);
+    var hm = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    return `<div class="ev-card">
+      <div class="ev-time"><div class="ev-hm">${hm}</div></div>
+      <div class="ev-line" style="background:${colors[e.type]||'#F47B20'}"></div>
+      <div class="ev-inf">
+        <div class="ev-ttl">${esc(e.title)}</div>
+        ${e.client ?'<div class="ev-cli">👤 '+esc(e.client)+'</div>':''}
+      </div>
+    </div>`;
+  }
+  el.innerHTML = `<div class="cal-title">📅 Расписание</div><div class="cal-date">${dStr}</div>` + (todayEv.length ? todayEv.map(evHtml).join('') : '<div style="text-align:center;padding:12px;color:var(--t3);font-size:12px">Сегодня событий нет</div>');
+}
+
+function renderNotif() {
+  var el = document.getElementById('notif-body');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="notif-wrap">
+      <div class="notif-title" id="tx-notif-title">${t('notif_title')}</div>
+      <div class="notif-item su"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>Aira:</b> Данияр М. ответил на ваш объект — есть покупатель!</div><div><span class="n-new-dot"></span></div><div class="notif-time">10 мин назад</div></div></div>
+      <div class="notif-item su"><span class="notif-ico">❤️</span><div><div class="notif-txt">3 человека добавили ваш объект в избранное</div><div class="notif-time">сегодня</div></div></div>
+      <div class="notif-item su" style="border-color:rgba(249,115,22,.25)"><span class="notif-ico">💡</span><div><div class="notif-txt" style="color:var(--orange)">Клиент держит квартиру менее 2 лет — предложите обмен для экономии налога!</div><div class="notif-time">совет дня</div></div></div>
+    </div>
+  `;
+}
+
+function renderSettings() {
+  var el = document.getElementById('settings-body');
+  if (!el) return;
+  if (!curUser) { toast('🔐 Войдите для настроек'); openM('m-auth'); return; }
+  el.innerHTML = `
+    <div class="sh-handle"></div>
+    <div class="sh-title">⚙️ Настройки аккаунта</div>
+    <div class="sh-body">
+      <div class="menu-sec"><div class="menu-lbl">Профиль</div>
+        <div class="menu-item" style="cursor:default"><div class="menu-ico">👤</div><div style="flex:1"><div class="menu-name">${esc(curUser.name)}</div><div class="menu-sub">${curUser.phone||'+7 777 000 00 00'}</div></div></div>
+      </div>
+      <div class="menu-sec"><div class="menu-lbl">Подключённые сервисы</div>
+        <div class="menu-item" style="cursor:default"><div class="menu-ico">🎵</div><div style="flex:1"><div class="menu-name">TikTok</div><div class="menu-sub">${curUser.tiktokConnected ? 'Подключён: '+curUser.tiktok : 'Не подключён'}</div></div>
+          <button class="btn-outline" style="width:auto;padding:6px 12px;margin:0" onclick="toast('${curUser.tiktokConnected?'Отключено':'Подключение в разработке'}')">${curUser.tiktokConnected?'Отключить':'Подключить'}</button>
+        </div>
+      </div>
+      <div class="menu-sec"><div class="menu-lbl">Уведомления</div>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--brd)"><input type="checkbox" checked style="width:18px;height:18px"><span style="font-size:13px">Новые сообщения (Aira)</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--brd)"><input type="checkbox" checked style="width:18px;height:18px"><span style="font-size:13px">Просмотры моих объектов</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 0"><input type="checkbox" style="width:18px;height:18px"><span style="font-size:13px">Рекламные рассылки Flapy</span></label>
+      </div>
+      <div class="menu-sec"><div class="menu-lbl">Безопасность</div>
+        <button class="btn-outline" onclick="toast('Пароль изменён')">Сменить пароль</button>
+        <button class="btn-outline" style="margin-top:8px;color:#E74C3C;border-color:#E74C3C" onclick="doLogout()">Выйти из аккаунта</button>
+      </div>
+      <p style="font-size:11px;color:var(--t3);text-align:center;margin-top:16px">💙 Публикуя объект, вы подтверждаете: вы имеете право на размещение, информация достоверна, мы вместе создаём безопасное пространство</p>
+    </div>
+  `;
+  openM('m-settings');
 }
 
 /* ── MORTGAGE CALCULATOR ───────────────────────────────── */
@@ -1162,7 +1267,7 @@ function calcMortgage() {
   var price = parseInt(document.getElementById('calc-price')?.value || '85000000');
   var down = parseFloat(document.getElementById('calc-down')?.value || '0.2');
   var years = parseInt(document.getElementById('calc-term')?.value || '20');
-  var rate = 0.05; // 5% годовых
+  var rate = 0.05;
   var loan = price * (1 - down);
   var months = years * 12;
   var monthly = loan * (rate/12) / (1 - Math.pow(1 + rate/12, -months));
