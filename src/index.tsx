@@ -10,10 +10,10 @@ app.use('/static/*', serveStatic({ root: './' }))
 // Favicon
 app.get('/favicon.ico', (c) => {
   c.header('Content-Type', 'image/svg+xml')
-  return c.body(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L12 10l6 6v8H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 24v-6h8v6" fill="white"/></svg>`)
+  return c.body(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L12 10l6 6v8H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 21V12h6v9" fill="white"/></svg>`)
 })
 
-// Legal pages
+// Legal Pages
 app.get('/privacy', (c) => c.html(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Политика конфиденциальности — Flapy</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:20px;line-height:1.6;color:#1F2937}h1{color:#1E2D5A}a{color:#F97316}</style></head><body><h1>🔐 Политика конфиденциальности</h1><p><b>Flapy.kz</b> («мы») собирает минимальные данные для работы сервиса:</p><ul><li>Имя и контактные данные (только для риэлторов)</li><li>Фото/видео объектов (с вашего согласия)</li><li>Технические данные (браузер, устройство) для улучшения работы</li></ul><p><b>Мы не:</b></p><ul><li>Не продаём ваши данные третьим лицам</li><li>Не используем данные для рекламы без согласия</li><li>Не храним пароли в открытом виде</li></ul><p><b>Ваши права:</b></p><ul><li>Запросить удаление аккаунта в любой момент</li><li>Отказаться от рассылок</li><li>Получить копию ваших данных</li></ul><p>📧 Вопросы: <a href="mailto:privacy@flapy.kz">privacy@flapy.kz</a></p><p><small>© 2026 Flapy Team. Соответствует Закону РК «О персональных данных».</small></p></body></html>`))
 
 app.get('/terms', (c) => c.html(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Пользовательское соглашение — Flapy</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:20px;line-height:1.6;color:#1F2937}h1{color:#1E2D5A}a{color:#F97316}</style></head><body><h1>📜 Пользовательское соглашение</h1><p>Используя Flapy, вы соглашаетесь:</p><ol><li><b>Достоверность:</b> Размещать только правдивую информацию об объектах</li><li><b>Права:</b> Иметь право на публикацию размещаемого контента</li><li><b>Безопасность:</b> Не размещать мошеннические объявления</li><li><b>Уважение:</b> Не допускать дискриминацию, спам, оскорбления</li></ol><p><b>Модерация:</b></p><ul><li>Новые риэлторы: премодерация первых 3 объектов</li><li>Автоматическая проверка фото на личные данные</li><li>Ручная проверка жалоб в течение 24 часов</li></ul><p><b>Ответственность:</b></p><ul><li>За недостоверные данные — блокировка аккаунта</li><li>За мошенничество — передача данных в правоохранительные органы</li></ul><p><b>Flapy не является:</b></p><ul><li>Публичной офертой</li><li>Гарантом сделок между пользователями</li><li>Заменой юридической консультации</li></ul><p>📧 Вопросы: <a href="mailto:legal@flapy.kz">legal@flapy.kz</a></p><p><small>© 2026 Flapy Team. MIT License.</small></p></body></html>`))
@@ -105,7 +105,6 @@ app.get('/api/exchange/matches/:id', (c) => {
 // API: Report
 app.post('/api/report', async (c) => {
   const b = await c.req.json().catch(() => ({})) as any
-  // Here you would: log to DB, notify admin, etc.
   return c.json({ success: true, message: 'Жалоба принята' })
 })
 
@@ -128,9 +127,9 @@ function generateAIDesc(o: any): string {
 
 function getMockRealtors() {
   return [
-    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#1E2D5A', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true, tiktok:'@aigerim_kz' },
-    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F47B20', specialization:'Дома, коттеджи', experience:7, badge:'', verified:true, tiktok:'@daniyar_homes' },
-    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#27AE60', specialization:'Коммерция', experience:9, badge:'ТОП', verified:true, tiktok:'@saule_commercial' },
+    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#1E2D5A', specialization:'Квартиры, новострой', experience:5, verified:true, tiktok:'@aigerim_kz' },
+    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F47B20', specialization:'Дома, коттеджи', experience:7, verified:true, tiktok:'@daniyar_homes' },
+    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#27AE60', specialization:'Коммерция', experience:9, verified:true, tiktok:'@saule_commercial' },
   ]
 }
 
@@ -405,22 +404,21 @@ return `<!DOCTYPE html>
         <label for="a-exch" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--t1)" onclick="document.getElementById('a-exch-details').style.display=this.checked?'block':'none'">🔄 Рассмотрю обмен <span class="ai-label">2026</span></label>
       </div>
       <div id="a-exch-details" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:11px">
-        <label class="flabel">${t('exch_wants')}</label>
+        <label class="flabel">Что интересует в обмен</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           <label style="font-size:12px"><input type="checkbox" value="apartment"> Квартира</label>
           <label style="font-size:12px"><input type="checkbox" value="house"> Дом</label>
           <label style="font-size:12px"><input type="checkbox" value="commercial"> Коммерция</label>
         </div>
-        <label class="flabel">${t('exch_extra')}</label>
+        <label class="flabel">Доплата</label>
         <select class="finput" style="margin-bottom:8px">
           <option>Готов доплатить</option><option>Рассмотрю доплату</option><option>Только равноценный</option>
         </select>
-        <label class="flabel">${t('exch_comment')}</label>
+        <label class="flabel">Комментарий для риэлторов</label>
         <textarea class="finput" placeholder="Пример: 'Рассмотрю обмен на 2-комн. в Есильском с доплатой'"></textarea>
       </div>
       <label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
       <textarea class="finput" id="a-desc" placeholder="Опишите объект или нажмите AI..."></textarea>
-      <button class="btn-outline" onclick="genAI()"><i class="fas fa-robot"></i> Сгенерировать описание AI</button>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0">
         <div style="border:2px dashed var(--brd2);border-radius:10px;padding:15px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="uploadMedia('photo')">
           <div style="font-size:22px;margin-bottom:3px">📷</div><div style="font-size:11px;color:var(--t3)" id="tx-add-photo">Добавить фото</div>
@@ -429,7 +427,7 @@ return `<!DOCTYPE html>
           <div style="font-size:22px;margin-bottom:3px">🎬</div><div style="font-size:11px;color:var(--t3)" id="tx-add-video">Добавить видео</div>
         </div>
       </div>
-      <p style="font-size:11px;color:var(--t3);text-align:center;margin:8px 0">${t('tiktok_hint')}</p>
+      <p style="font-size:11px;color:var(--t3);text-align:center;margin:8px 0">💡 Эта информация видна только риэлторам. Покупатели видят только бейдж «🔄 Обмен».</p>
       <button class="btn-primary" onclick="submitListing()"><i class="fas fa-rocket"></i> <span id="tx-publish-btn">Опубликовать</span></button>
       <p style="font-size:10px;color:var(--t3);text-align:center;margin-top:12px">💙 Публикуя объект, вы подтверждаете: вы имеете право на размещение, информация достоверна, мы вместе создаём безопасное пространство</p>
     </div>
@@ -468,16 +466,10 @@ return `<!DOCTYPE html>
       <div class="more-item" onclick="closeM('m-more');go('s-notif');nav(null)">
         <div class="more-ico">🔔</div><div class="more-name" data-ru="Уведомления" data-kz="Хабарламалар">Уведомления</div><div class="more-sub" data-ru="3 новых" data-kz="3 жаңа">3 новых</div>
       </div>
-      <div class="more-item" onclick="closeM('m-more');openCalc()">
-        <div class="more-ico">💰</div><div class="more-name">Калькулятор</div><div class="more-sub">Ипотечный расчёт</div>
-      </div>
-      <div class="more-item" onclick="closeM('m-more');openM('m-auth')">
-        <div class="more-ico">🔐</div><div class="more-name">Войти</div><div class="more-sub">Для риэлторов</div>
-      </div>
     </div>
     <div style="padding:0 17px 17px;font-size:10px;color:var(--t3);text-align:center">
-      <a href="/privacy" style="color:var(--t3)">${t('privacy_link')}</a> · 
-      <a href="/terms" style="color:var(--t3)">${t('terms_link')}</a> · 
+      <a href="/privacy" style="color:var(--t3)">Политика конфиденциальности</a> · 
+      <a href="/terms" style="color:var(--t3)">Пользовательское соглашение</a> · 
       <span>© 2026 Flapy Team</span>
     </div>
   </div>
