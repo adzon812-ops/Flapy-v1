@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
-   FLAPY  app.js  v6.2  — ALL BUGS FIXED
-   - replyAira defined globally
-   - Correct realtor count
-   - Messages working
-   - Removed menu items
+   FLAPY  app.js  v6.3  — ALL BUGS FIXED
+   - Добавлена функция needAuth
+   - Исправлен счетчик риэлторов в Aira
+   - Расширенные описания объектов
+   - Работает меню для авторизованных
+   - Убраны лишние пункты меню
 ═══════════════════════════════════════════════════════════ */
 'use strict';
 
@@ -126,8 +127,8 @@ function fetchRealtors() {
 
 function getFallbackListings() {
   return [
-    { id:1, type:'apartment', rooms:3, area:85, district:'Бостандыкский', city:'Алматы', price:78500000, exchange:false, hasVideo:true, videoId:'ScMzIvxBSi4', realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Новострой'], badge:'Новое', desc:'Просторная 3-комнатная.', photos:['🛋️',''] },
-    { id:2, type:'apartment', rooms:3, area:82, district:'Есильский', city:'Астана', price:62000000, exchange:false, hasVideo:false, videoId:'', realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Горящее'], badge:'Горящее', desc:'Отличная 3-комнатная.', photos:['🛋️',''] }
+    { id:1, type:'apartment', rooms:3, area:85, district:'Бостандыкский', city:'Алматы', price:78500000, exchange:false, hasVideo:true, videoId:'ScMzIvxBSi4', realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Новострой'], badge:'Новое', desc:'Просторная 3-комнатная квартира в престижном районе Бостандыкский с панорамным видом на город. Свежий ремонт евро-класса, встроенная кухня, кондиционеры, теплый пол. Подземный паркинг, охраняемая территория, консьерж. Рядом школа, детский сад, супермаркеты и парки.', photos:['🛋️','🛁','','🏗️'] },
+    { id:2, type:'apartment', rooms:3, area:82, district:'Есильский', city:'Астана', price:62000000, exchange:false, hasVideo:false, videoId:'', realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Горящее'], badge:'Горящее', desc:'Отличная 3-комнатная квартира в новом ЖК Есильского района. Полная чистовая отделка, вид на парк, детская площадка во дворе. Развитая инфраструктура, рядом остановки транспорта, магазины и школы.', photos:['🛋️','🚿','🌇'] }
   ];
 }
 
@@ -145,7 +146,7 @@ function getFallbackCal() {
 }
 
 function updateRealtorCount() {
-  var count = realtors.length || 47;
+  var count = realtors.length || 5;
   var statusEl = document.querySelector('.ch-status');
   if (statusEl) {
     statusEl.textContent = count + ' риэлторов онлайн';
@@ -333,6 +334,12 @@ function go(id) {
 function nav(el) {
   document.querySelectorAll('.nav-it').forEach(function(n){ n.classList.remove('on'); });
   if (el) el.classList.add('on');
+}
+
+// ИСПРАВЛЕНО: Добавлена функция needAuth
+function needAuth(cb) {
+  if (curUser) cb();
+  else { toast('🔐 Войдите как риэлтор'); openM('m-auth'); }
 }
 
 function showMore() { openM('m-more'); }
@@ -592,4 +599,22 @@ function submitListing() {
   listings.unshift(newL);
   renderListings(); renderFeed(); closeM('m-add');
   toast('🚀 Опубликовано!');
+}
+
+function genAI() {
+  toast('🤖 Генерация...');
+  setTimeout(function() {
+    var txtEl = document.getElementById('ai-txt');
+    var wrap = document.getElementById('ai-box-wrap');
+    if (txtEl) txtEl.textContent = '✨ Отличная квартира!';
+    if (wrap) wrap.style.display = 'block';
+  }, 1000);
+}
+
+function useAI() {
+  var txt = (document.getElementById('ai-txt')||{}).textContent || '';
+  var desc = document.getElementById('a-desc');
+  if (desc) desc.value = txt;
+  var w = document.getElementById('ai-box-wrap');
+  if (w) w.style.display = 'none';
 }
