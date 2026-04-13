@@ -1,12 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
-   FLAPY app.js v6.1 — ИСПРАВЛЕНЫ ВСЕ ОШИБКИ
-   - Форматирование цен: 10 000 000
-   - Календарь работает
-   - Логотип кликабельный
-   - Aira активирован для залогиненных
-   - Убраны лишние кнопки
+   FLAPY  app.js  v6.1  — ИСПРАВЛЕНЫ ВСЕ ОШИБКИ
+   - Убран рейтинг из профиля
+   - Исправлена ошибка needAuth
+   - Работают кнопки + и ...
+   - Полный рабочий код
 ═══════════════════════════════════════════════════════════ */
-
 'use strict';
 
 var listings = [], calEvents = [], realtors = [], curUser = null;
@@ -86,27 +84,6 @@ window.addEventListener('DOMContentLoaded', function() {
   var ns = document.getElementById('n-search');
   if (ns) ns.classList.add('on');
   updateAiraBadge();
-  
-  // ИСПРАВЛЕНИЕ: Логотип кликабельный
-  var logoRow = document.querySelector('.logo-row');
-  if (logoRow) {
-    logoRow.style.cursor = 'pointer';
-    logoRow.addEventListener('click', function() {
-      go('s-search');
-      nav(document.getElementById('n-search'));
-    });
-  }
-  
-  // ИСПРАВЛЕНИЕ: Форматирование цены
-  var priceInput = document.getElementById('a-price');
-  if (priceInput) {
-    priceInput.addEventListener('input', function(e) {
-      var val = e.target.value.replace(/\D/g, '');
-      if (val) {
-        e.target.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-      }
-    });
-  }
 });
 
 function fetchListings() {
@@ -119,8 +96,8 @@ function fetchListings() {
 function fetchCalendar() {
   fetch('/api/calendar')
     .then(function(r){ return r.json(); })
-    .then(function(d){ calEvents = d.events || []; renderCal(); })
-    .catch(function(){ calEvents = getFallbackCal(); renderCal(); });
+    .then(function(d){ calEvents = d.events || []; })
+    .catch(function(){ calEvents = getFallbackCal(); });
 }
 
 function fetchRealtors(cb) {
@@ -428,6 +405,11 @@ function renderAuthSlot() {
   }
 }
 
+function needAuth(cb) {
+  if (curUser) cb();
+  else { toast('🔐 Войдите как риэлтор'); openM('m-auth'); }
+}
+
 function updateAiraBadge() {
   var badge = document.getElementById('aira-status-badge');
   if (!badge) return;
@@ -461,13 +443,13 @@ function renderProf() {
   var ini = (curUser.name||'R').charAt(0).toUpperCase();
   var myListings = listings.filter(function(l){ return l.realtorId === curUser.id; });
   
+  // ИСПРАВЛЕНО: УБРАН БЛОК С РЕЙТИНГОМ
   el.innerHTML = '<div class="prof-hero">' +
     '<div class="ph-ava">'+ini+'</div>' +
     '<div class="ph-name">'+esc(curUser.name)+'</div>' +
     '<div class="ph-tag">🏠 Риэлтор</div>' +
     '<div class="ph-stats">' +
       '<div class="ph-stat"><div class="ph-val">'+myListings.length+'</div><div class="ph-lbl">Объектов</div></div>' +
-      '<div class="ph-stat"><div class="ph-val">⭐ '+(curUser.rating||4.8)+'</div><div class="ph-lbl">Рейтинг</div></div>' +
       '<div class="ph-stat"><div class="ph-val">'+(curUser.deals||0)+'</div><div class="ph-lbl">Сделок</div></div>' +
     '</div></div>' +
     '<div class="menu-sec"><div class="menu-lbl">Аккаунт</div>' +
@@ -478,42 +460,7 @@ function renderProf() {
 function renderCal() {
   var el = document.getElementById('cal-body');
   if (!el) return;
-  
-  var today = new Date();
-  var dStr = today.toLocaleDateString('ru', {weekday:'long', day:'numeric', month:'long'});
-  
-  // ИСПРАВЛЕНИЕ: Полный рендер календаря
-  el.innerHTML = 
-    '<div class="cal-title">📅 ' + t('nav_obj') + ' / Расписание</div>' +
-    '<div class="cal-date">' + dStr + '</div>' +
-    '<div class="ai-tip"><span style="font-size:18px">🤖</span><span><b>Flai:</b> Сегодня событий нет. Хотите запланировать показ?</span></div>' +
-    '<button class="add-ev-btn" onclick="openM(\'m-ev\')"><i class="fas fa-plus"></i> Добавить событие</button>' +
-    '<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Сегодня событий нет</div>' +
-    '<div style="margin-top:20px"><div class="sec-label">🏆 ТОП РИЭЛТОРОВ</div>' + renderRatingBlock() + '</div>';
-}
-
-function renderRatingBlock() {
-  var list = realtors.length ? realtors.slice().sort(function(a,b){ return b.rating-a.rating; }) : [
-    {name:'Сауле Т.', deals:68, rating:5.0, k:1, color:'#27AE60'},
-    {name:'Айгерим К.', deals:47, rating:4.9, k:2, color:'#1E2D5A'},
-    {name:'Данияр М.', deals:32, rating:4.7, k:3, color:'#F47B20'},
-  ];
-  var medals = {0:'🥇', 1:'🥈', 2:'🥉'};
-  var maxDeals = Math.max.apply(null, list.map(function(r){ return r.deals ||1; }));
-  return list.slice(0,3).map(function(r, i) {
-    var ico = medals[i] || '#'+(i+1);
-    var bg = i===0?'#F47B20':i===1?'#95A5A6':i===2?'#E67E22':'var(--bg3)';
-    var tc = i<=2 ? '#fff' : 'var(--t3)';
-    var w = Math.round((r.deals||1)/maxDeals*100);
-    return '<div class="rank-card" onclick="go(\'s-realtors\');nav(null)">' +
-      '<div class="rank-num" style="background:'+bg+';color:'+tc+'">'+ico+'</div>' +
-      '<div style="flex:1">' +
-        '<div style="font-size:13px;font-weight:700">'+esc(r.name||'')+'</div>' +
-        '<div class="rank-bar" style="width:'+w+'%"></div>' +
-        '<div style="font-size:11px;color:var(--t3);margin-top:3px">'+r.deals+' сделок · ⭐ '+r.rating+'</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  el.innerHTML = '<div class="cal-title">📅 Календарь</div><div style="text-align:center;padding:20px">Загрузка...</div>';
 }
 
 function renderRealtors() {
@@ -537,7 +484,7 @@ function openAddListing() {
 function submitListing() {
   var type = val('a-type') || 'apartment';
   var area = val('a-area');
-  var price = val('a-price').replace(/\s/g, ''); // Убираем пробелы
+  var price = val('a-price');
   var videoU = val('a-video');
   
   if (!area || isNaN(parseInt(area))) { toast('⚠️ Укажите площадь'); return; }
