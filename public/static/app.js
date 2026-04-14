@@ -232,36 +232,68 @@ function submitListing(){
 }
 
 function uploadMedia(type){
+  console.log('📁 Upload clicked, type:', type);
+  
   var input=document.createElement('input');
   input.type='file';
   input.accept=type==='photo'?'image/*':'video/*';
   input.multiple=true;
+  input.style.display='none';
+  
   input.onchange=function(e){
+    console.log('📂 Files selected:', e.target.files.length);
     var files=e.target.files;
-    if(!files || files.length===0)return;
+    if(!files || files.length===0){
+      console.error('No files selected');
+      return;
+    }
     
     toast('⏳ Загрузка '+files.length+' '+ (type==='photo'?'фото':'видео') +'...');
     
     var loaded=0;
     Array.from(files).forEach(function(file){
+      console.log('📄 Loading file:', file.name, file.type);
       var reader=new FileReader();
       reader.onload=function(evt){
+        console.log('✅ File loaded:', file.name);
         if(type==='photo'){
           uploadedMedia.photos.push(evt.target.result);
+          console.log('📸 Photos count:', uploadedMedia.photos.length);
         }else{
           uploadedMedia.videos.push(evt.target.result);
+          console.log('🎥 Videos count:', uploadedMedia.videos.length);
         }
         loaded++;
         if(loaded===files.length){
           setTimeout(function(){
             toast('✅ Загружено: '+files.length+' '+ (type==='photo'?'фото':'видео'));
+            // Update UI to show count
+            var photoSection=document.querySelector('.more-item[onclick*="photo"]');
+            var videoSection=document.querySelector('.more-item[onclick*="video"]');
+            if(photoSection && uploadedMedia.photos.length>0){
+              photoSection.style.borderColor='var(--green)';
+              photoSection.innerHTML='<div style="font-size:22px;margin-bottom:3px">📷</div><div style="font-size:11px;color:var(--green);font-weight:600">Загружено: '+uploadedMedia.photos.length+'</div>';
+            }
+            if(videoSection && uploadedMedia.videos.length>0){
+              videoSection.style.borderColor='var(--green)';
+              videoSection.innerHTML='<div style="font-size:22px;margin-bottom:3px">🎬</div><div style="font-size:11px;color:var(--green);font-weight:600">Загружено: '+uploadedMedia.videos.length+'</div>';
+            }
           },500);
         }
+      };
+      reader.onerror=function(err){
+        console.error('❌ Error loading file:', err);
+        toast('❌ Ошибка загрузки: '+file.name);
       };
       reader.readAsDataURL(file);
     });
   };
+  
+  document.body.appendChild(input);
   input.click();
+  setTimeout(function(){
+    document.body.removeChild(input);
+  },1000);
 }
 
 function authTab(tab){
