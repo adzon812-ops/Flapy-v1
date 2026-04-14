@@ -385,7 +385,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       <div class="ch-ava aira" style="font-size:13px;font-weight:900">A</div>
       <div style="flex:1">
         <div class="ch-name">Aira <span style="font-size:12px;font-weight:500;color:var(--t2)" id="tx-aira-sub">— Чат риэлторов</span></div>
-        <div class="ch-status" style="color:var(--orange)">47 риэлторов онлайн</div>
+       <div class="ch-status" style="color:var(--green)" id="aira-online-count">Онлайн</div>
       </div>
       <div id="aira-status-badge" style="background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--orange);font-weight:600">🔒 Гость</div>
     </div>
