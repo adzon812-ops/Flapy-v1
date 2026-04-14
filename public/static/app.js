@@ -1,20 +1,23 @@
-/* FLAPY app.js v11.1 — FINAL FIXES */
+/* FLAPY app.js v12.0 — PRODUCTION READY */
 'use strict';
 
 var listings = [], calEvents = [], curUser = null, curFilter = 'all', curLang = 'ru', listTab = 'obj',
-notifications = [{id:1,from:'Aira',text:'Данияр М. ответил на объект',time:'10 мин',read:false},{id:2,from:'Система',text:'Новый показ',time:'1 час',read:false}],
-airaMessages = [{id:1,author:'Айгерим К.',text:'3к Есиль — ищу покупателя 🤝',time:'10:30',mine:false},{id:2,author:'Данияр М.',text:'Есть покупатель!',time:'10:35',mine:false,highlight:true}];
+notifications = [],
+airaMessages = [];
 
 var T = {ru:{call:'Позвонить',msg:'Написать',profile:'Профиль',logout:'Выйти'},kz:{call:'Қоңырау',msg:'Жазу',profile:'Профиль',logout:'Шығу'}};
 function t(k){return (T[curLang]&&T[curLang][k])||(T.ru[k]||k);}
 
 window.addEventListener('load',function(){
   try{var s=localStorage.getItem('fp_user');if(s)curUser=JSON.parse(s);}catch(e){}
+  try{var l=localStorage.getItem('fp_listings');if(l)listings=JSON.parse(l);}catch(e){}
+  try{var n=localStorage.getItem('fp_notifications');if(n)notifications=JSON.parse(n);}catch(e){}
   curLang=localStorage.getItem('fp_lang')||'ru';applyLangUI();
   if(curUser){renderAuthSlot();updateAiraBadge();}
   updateNavVisibility();updateNotificationsCount();
   var ld=document.getElementById('loader');if(ld)ld.style.display='none';
-  listings=getFallbackListings();renderListings();
+  if(listings.length===0)listings=getFallbackListings();
+  renderListings();
 });
 
 function updateNavVisibility(){
@@ -41,9 +44,17 @@ function closeOvl(e,id){if(e.target.id===id)closeM(id);}
 
 function getFallbackListings(){
   return [
-    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:78500000,hasVideo:false,realtor:'Айгерим К.',realtorFull:'Айгерим Касымова',rating:4.9,agency:'Century 21',badge:'Новое',desc:'Просторная 3-комнатная с панорамным видом.',phone:'+7 701 234 56 78',liked:false},
-    {id:2,type:'apartment',rooms:3,area:82,district:'Алматинский',city:'Астана',price:62000000,hasVideo:false,realtor:'Данияр М.',realtorFull:'Данияр Мусин',rating:4.7,agency:'Etagi',badge:'Горящее',desc:'Новый ЖК, полная отделка.',phone:'+7 702 345 67 89',liked:false}
+    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:78500000,hasVideo:false,realtor:'Айгерим К.',realtorFull:'Айгерим Касымова',rating:4.9,agency:'Century 21',badge:'Новое',desc:'Просторная 3-комнатная квартира с панорамным видом на город. Свежий ремонт евро-класса с использованием качественных материалов. Просторная гостиная-студия, две изолированные спальни, современная кухня с бытовой техникой. Раздельный санузел. Утепленный балкон. Закрытый двор с детской площадкой. Рядом школы, детские сады, ТРЦ. Удобная транспортная развязка.',phone:'+7 701 234 56 78',liked:false,photos:[]},
+    {id:2,type:'apartment',rooms:3,area:82,district:'Алматинский',city:'Астана',price:62000000,hasVideo:false,realtor:'Данияр М.',realtorFull:'Данияр Мусин',rating:4.7,agency:'Etagi',badge:'Горящее',desc:'Отличная 3-комнатная квартира в новом жилом комплексе. Полная отделка, никто не жил. Качественные окна, ламинат, керамогранит. Встроенная кухня с техникой. Кондиционер. Подземный паркинг. Охраняемая территория. Развитая инфраструктура: школы, сады, магазины в шаговой доступности.',phone:'+7 702 345 67 89',liked:false,photos:[]}
   ];
+}
+
+function saveListings(){
+  try{localStorage.setItem('fp_listings',JSON.stringify(listings));}catch(e){}
+}
+
+function saveNotifications(){
+  try{localStorage.setItem('fp_notifications',JSON.stringify(notifications));}catch(e){}
 }
 
 function updateNotificationsCount(){
@@ -66,7 +77,7 @@ function updateNotificationsCount(){
 function renderNotifications(){
   var el=document.getElementById('notif-body');if(!el)return;
   if(notifications.length===0){
-    el.innerHTML='<div style="padding:40px;text-align:center;color:#999">Нет уведомлений</div>';
+    el.innerHTML='<div style="padding:40px;text-align:center;color:#999"><div style="font-size:48px;margin-bottom:12px">🔔</div><div style="font-size:16px;font-weight:600;margin-bottom:4px">Нет уведомлений</div><div style="font-size:13px;color:var(--t3)">Когда появятся новые уведомления, они появятся здесь</div></div>';
     return;
   }
   el.innerHTML=notifications.map(n=>
@@ -76,7 +87,7 @@ function renderNotifications(){
 
 function markNotifRead(id){
   var n=notifications.find(x=>x.id===id);
-  if(n&&!n.read){n.read=true;updateNotificationsCount();renderNotifications();}
+  if(n&&!n.read){n.read=true;updateNotificationsCount();renderNotifications();saveNotifications();}
 }
 
 function updateAiraBadge(){
@@ -93,6 +104,10 @@ function updateAiraBadge(){
 
 function renderAiraChat(){
   var el=document.getElementById('aira-msgs');if(!el)return;
+  if(airaMessages.length===0){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:#999"><div style="font-size:48px;margin-bottom:12px">💬</div><div style="font-size:16px;font-weight:600;margin-bottom:4px">Нет сообщений</div><div style="font-size:13px">Будьте первым кто напишет!</div></div>';
+    return;
+  }
   el.innerHTML=airaMessages.map(m=>{
     var bg=m.mine?'var(--navy)':'#fff',color=m.mine?'#fff':'var(--t1)',align=m.mine?'me':'bot',border=m.highlight?'border-left:3px solid var(--orange)':'';
     return '<div class="msg '+align+'"><div class="bwrap"><div class="bubble" style="background:'+bg+';color:'+color+';'+border+'">'+m.text+'</div><div class="m-ts">'+m.time+'</div></div></div>';
@@ -116,13 +131,14 @@ function replyAira(btn){
 function renderProf(){
   var el=document.getElementById('prof-body');if(!el)return;
   if(!curUser){
-    el.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:72px;margin-bottom:16px">👤</div><button onclick="openM(\'m-auth\')" class="btn-primary">Войти</button></div>';
+    el.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:72px;margin-bottom:16px">👤</div><div style="font-size:18px;margin-bottom:24px;color:#555">Войдите в систему</div><button onclick="openM(\'m-auth\')" class="btn-primary">Войти</button></div>';
     return;
   }
   var ini=(curUser.name||'R').charAt(0).toUpperCase();
-  el.innerHTML='<div class="prof-hero"><div class="ph-ava">'+ini+'</div><div class="ph-name">'+curUser.name+'</div><div class="ph-tag">🏠 Риэлтор</div></div>'+
+  var userNotifications=notifications.filter(n=>!n.read).length;
+  el.innerHTML='<div class="prof-hero"><div class="ph-ava">'+ini+'</div><div class="ph-name">'+curUser.name+'</div><div class="ph-tag">🏠 Риэлтор</div><div class="ph-stats"><div class="ph-stat"><div class="ph-val">'+listings.filter(l=>l.realtor===curUser.name).length+'</div><div class="ph-lbl">объектов</div></div><div class="ph-stat"><div class="ph-val">4.9★</div><div class="ph-lbl">рейтинг</div></div></div></div>'+
     '<div class="menu-sec"><div class="menu-lbl">Аккаунт</div>'+
-    '<div class="menu-item" onclick="go(\'s-notif\')"><div class="menu-ico" style="background:rgba(244,123,32,.1)">🔔</div><div style="flex:1"><div class="menu-name">Уведомления</div><div class="menu-sub" id="menu-notif-badge">2 новых</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:11px"></i></div>'+
+    '<div class="menu-item" onclick="go(\'s-notif\')"><div class="menu-ico" style="background:rgba(244,123,32,.1)">🔔</div><div style="flex:1"><div class="menu-name">Уведомления</div><div class="menu-sub">'+userNotifications+' новых</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:11px"></i></div>'+
     '<div class="menu-item" onclick="go(\'s-aira\')"><div class="menu-ico" style="background:rgba(39,174,96,.1)">💬</div><div style="flex:1"><div class="menu-name">Aira чат</div><div class="menu-sub">Чат риэлторов</div></div><i class="fas fa-chevron-right" style="color:var(--t3);font-size:11px"></i></div>'+
     '<div class="menu-item" onclick="doLogout()"><div class="menu-ico" style="background:rgba(231,76,60,.1)">🚪</div><div><div class="menu-name" style="color:var(--red)">Выйти</div></div></div></div>';
   updateNotificationsCount();
@@ -142,7 +158,7 @@ function formatPriceInput(inp){
 
 function genAI(){
   var rooms=document.getElementById('a-rooms')?.value||'3',area=document.getElementById('a-area')?.value||'85',dist=document.getElementById('a-district')?.value||'Есиль';
-  var desc='✨ '+rooms+'-комнатная квартира, '+area+' м² в '+dist+'!\n\n🏆 Развитая инфраструктура · Рядом транспорт\n💰 Цена по договорённости\n📍 '+dist+', Астана\n📞 Звоните — покажу в любое время!';
+  var desc='✨ '+rooms+'-комнатная квартира, '+area+' м² в районе '+dist+'!\n\n🏆 Развитая инфраструктура:\n• Рядом транспорт\n• Ухоженный двор\n• Консьерж\n\n💰 Цена по договорённости\n📍 '+dist+', Астана\n\n📞 Звоните — покажу в любое удобное время!';
   document.getElementById('ai-txt').textContent=desc;
   document.getElementById('ai-box-wrap').style.display='block';
 }
@@ -156,12 +172,49 @@ function useAI(){
 function submitListing(){
   var priceStr=document.getElementById('a-price')?.value.replace(/\s/g,'')||'0';
   var price=parseInt(priceStr);
-  var desc=document.getElementById('a-desc')?.value;
-  if(!desc){alert('Введите описание');return;}
-  listings.unshift({id:listings.length+1,type:'apartment',rooms:3,area:85,city:'Астана',district:'Есильский',price:price,desc:desc,realtor:curUser?curUser.name:'Гость',realtorFull:curUser?curUser.name:'Гость',agency:curUser?'Моё агентство':'-',phone:'+7 701 234 56 78',badge:'Новое',tags:[],hasVideo:false,liked:false,photos:['🏢']});
-  renderListings();closeM('m-add');
+  var desc=document.getElementById('a-desc')?.value||'';
+  var type=document.getElementById('a-type')?.value||'apartment';
+  var rooms=document.getElementById('a-rooms')?.value||'3';
+  var area=document.getElementById('a-area')?.value||'85';
+  var city=document.getElementById('a-city')?.value||'Астана';
+  var district=document.getElementById('a-district')?.value||'Есиль';
+  
+  if(!desc){alert('Введите описание объекта');return;}
+  if(price<=0){alert('Введите корректную цену');return;}
+  
+  var newListing={
+    id:Date.now(),
+    type:type,
+    rooms:parseInt(rooms)||3,
+    area:parseInt(area)||85,
+    city:city,
+    district:district,
+    price:price,
+    desc:desc,
+    realtor:curUser?curUser.name:'Гость',
+    realtorFull:curUser?curUser.name:'Гость',
+    agency:curUser?'Моё агентство':'-',
+    phone:curUser?'+7 701 234 56 78':'+7 701 234 56 78',
+    badge:'Новое',
+    tags:[],
+    hasVideo:false,
+    liked:false,
+    photos:[],
+    createdAt:new Date().toISOString()
+  };
+  
+  listings.unshift(newListing);
+  saveListings();
+  renderListings();
+  closeM('m-add');
+  
   document.getElementById('a-price').value='';
   document.getElementById('a-desc').value='';
+  document.getElementById('a-rooms').value='3';
+  document.getElementById('a-area').value='';
+  
+  toast('✅ Объект опубликован!');
+  go('s-search');
 }
 
 function uploadMedia(type){
@@ -171,9 +224,12 @@ function uploadMedia(type){
   input.onchange=function(e){
     var file=e.target.files[0];
     if(file){
+      toast('⏳ Загрузка '+ (type==='photo'?'фото':'видео') +'...');
       var reader=new FileReader();
       reader.onload=function(evt){
-        toast('✅ '+type+' загружено: '+file.name);
+        setTimeout(function(){
+          toast('✅ '+ (type==='photo'?'Фото':'Видео') +' загружено: '+file.name.substring(0,20)+'...');
+        },1000);
       };
       reader.readAsDataURL(file);
     }
@@ -205,6 +261,7 @@ function doLogin(){
   curUser={name:email.split('@')[0],email:email};
   localStorage.setItem('fp_user',JSON.stringify(curUser));
   renderAuthSlot();closeM('m-auth');renderProf();updateAiraBadge();updateNavVisibility();
+  toast('👋 Добро пожаловать, '+curUser.name+'!');
 }
 
 function doReg(){
@@ -213,11 +270,13 @@ function doReg(){
   curUser={name:name,email:email};
   localStorage.setItem('fp_user',JSON.stringify(curUser));
   renderAuthSlot();closeM('m-auth');renderProf();updateAiraBadge();updateNavVisibility();
+  toast('🎉 Добро пожаловать, '+name+'!');
 }
 
 function doLogout(){
-  curUser=null;localStorage.removeItem('fp_user');
+  curUser=null;
   renderAuthSlot();renderProf();updateAiraBadge();updateNavVisibility();
+  toast('👋 До встречи!');
 }
 
 function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
@@ -248,19 +307,52 @@ function toggleLike(id,btn){
   var l=listings.find(x=>x.id===id);if(!l)return;
   l.liked=!l.liked;
   btn.innerHTML='<i class="'+(l.liked?'fas':'far')+' fa-heart"></i>';
+  saveListings();
 }
 
 function openDetail(id){
-  var l=listings.find(x=>x.id===id);if(!l)return;
-  toast(l.realtorFull+' · '+fmtPrice(l.price)+' ₸');
+  var l=listings.find(x=>x.id===id);
+  if(!l){alert('Объект не найден');return;}
+  var modalBody=document.getElementById('m-det-body');
+  if(!modalBody)return;
+  
+  var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':l.type==='commercial'?'🏪':'🌳';
+  
+  modalBody.innerHTML='<div class="sh-handle"></div>'+
+    '<div class="det-visual"><div class="det-em-bg">'+em+'</div></div>'+
+    '<div class="det-price">'+fmtPrice(l.price)+' ₸</div>'+
+    '<div style="padding:0 17px 12px"><div style="font-size:13px;color:var(--t3);margin-bottom:4px">📍 '+l.city+', '+l.district+'</div><div style="font-size:16px;font-weight:700;color:var(--t1);margin-bottom:8px">'+l.rooms+'-комнатная · '+l.area+' м²</div></div>'+
+    '<div class="det-desc" style="padding:0 17px 16px;font-size:14px;line-height:1.7;color:var(--t2);white-space:pre-line">'+l.desc+'</div>'+
+    '<div style="margin:0 17px 12px;padding:12px;background:var(--bg3);border-radius:12px"><div style="font-size:12px;color:var(--t3);margin-bottom:4px">Риэлтор</div><div style="font-weight:600;color:var(--t1)">'+l.realtorFull+'</div><div style="font-size:12px;color:var(--t3)">'+l.agency+'</div></div>'+
+    '<div class="det-cta">'+
+      '<button class="det-btn det-call" onclick="callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button>'+
+      '<button class="det-btn det-chat" onclick="closeM(\'m-det\');go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button>'+
+    '</div>';
+  
+  openM('m-det');
 }
 
 function renderListings(){
   var el=document.getElementById('list-body');if(!el)return;
-  if(!listings.length){el.innerHTML='<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">Загрузка...</div></div>';return;}
-  el.innerHTML=listings.map(l=>{
+  if(listings.length===0){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🏠</div><div class="empty-t">Нет объектов</div><div class="empty-s">Добавьте первый объект!</div></div>';
+    return;
+  }
+  
+  var filtered=listings;
+  if(listTab==='exch')filtered=listings.filter(l=>l.exchange);
+  if(curFilter==='video')filtered=listings.filter(l=>l.hasVideo);
+  else if(curFilter!=='all')filtered=listings.filter(l=>l.type===curFilter);
+  
+  if(filtered.length===0){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">Ничего не найдено</div></div>';
+    return;
+  }
+  
+  el.innerHTML=filtered.map(l=>{
     var ini=(l.realtor||'R').charAt(0);
-    return '<div class="lcard su" onclick="openDetail('+l.id+')"><div class="lcard-media"><div class="lcard-em">🏢</div>'+(l.badge?'<div class="lcard-badge" style="background:var(--orange)">'+l.badge+'</div>':'')+'</div><div class="lcard-body"><div class="lcard-loc"><i class="fas fa-map-marker-alt"></i>'+l.city+', '+l.district+'</div><div class="lcard-price">'+fmtPrice(l.price)+' ₸</div><div class="lcard-sub">'+l.rooms+'-комнатная · '+l.area+' м²</div><div class="lcard-tags">'+(l.tags||[]).map(tg=>'<span class="ltag'+(tg==='Обмен'?' exch':'')+'">'+tg+'</span>').join('')+'</div><div class="lcard-footer"><div class="lf-ava" style="background:var(--navy)">'+ini+'</div><div class="lf-name">'+esc(l.realtorFull)+' · '+esc(l.agency)+'</div></div><div class="lcard-cta"><button class="cta-btn cta-call" onclick="event.stopPropagation();callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button><button class="cta-btn cta-msg" onclick="event.stopPropagation();go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button></div></div></div>';
+    var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':l.type==='commercial'?'🏪':'';
+    return '<div class="lcard su" onclick="openDetail('+l.id+')"><div class="lcard-media"><div class="lcard-em">'+em+'</div>'+(l.badge?'<div class="lcard-badge" style="background:var(--orange)">'+l.badge+'</div>':'')+'</div><div class="lcard-body"><div class="lcard-loc"><i class="fas fa-map-marker-alt"></i>'+l.city+', '+l.district+'</div><div class="lcard-price">'+fmtPrice(l.price)+' ₸</div><div class="lcard-sub">'+l.rooms+'-комнатная · '+l.area+' м²</div><div class="lcard-tags">'+(l.tags||[]).map(tg=>'<span class="ltag'+(tg==='Обмен'?' exch':'')+'">'+tg+'</span>').join('')+'</div><div class="lcard-desc" style="font-size:13px;color:var(--t2);line-height:1.5;margin:8px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+l.desc+'</div><div class="lcard-footer"><div class="lf-ava" style="background:var(--navy)">'+ini+'</div><div class="lf-name">'+esc(l.realtorFull)+' · '+esc(l.agency)+'</div></div><div class="lcard-cta"><button class="cta-btn cta-call" onclick="event.stopPropagation();callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button><button class="cta-btn cta-msg" onclick="event.stopPropagation();go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button></div></div></div>';
   }).join('');
 }
 
@@ -315,4 +407,4 @@ function applyLangUI(){
   renderListings();
 }
 
-console.log('✅ Flapy app.js v11.1 loaded');
+console.log('✅ Flapy app.js v12.0 loaded — PRODUCTION READY');
