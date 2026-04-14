@@ -496,7 +496,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <option>Есиль</option><option>Алматинский</option><option>Сарыарка</option><option>Байконыр</option><option>Нура</option><option>Бостандыкский</option>
       </select>
       <label class="flabel">Цена ₸</label>
-      <i<input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
+      <input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
       <label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
       <textarea class="finput" id="a-desc" placeholder="Опишите объект или нажмите AI..."></textarea>
       <div id="ai-box-wrap" style="display:none">
@@ -508,12 +508,12 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         </div>
       </div>
       <button class="btn-outline" onclick="genAI()"><i class="fas fa-robot"></i> Сгенерировать описание AI</button>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0">
-  <div id="photo-upload-area" style="border:2px dashed var(--brd2);border-radius:10px;padding:15px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .2s" onclick="uploadMedia('photo')">
-    <div style="font-size:22px;margin-bottom:3px">📷</div><div style="font-size:11px;color:var(--t3)" id="tx-add-photo">Добавить фото</div>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0">
+  <div style="border:2px dashed var(--brd2);border-radius:10px;padding:15px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="uploadMedia('photo')">
+    <div style="font-size:22px;margin-bottom:3px">📷</div><div style="font-size:11px;color:var(--t3)">Добавить фото</div>
   </div>
-  <div id="video-upload-area" style="border:2px dashed var(--brd2);border-radius:10px;padding:15px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .2s" onclick="uploadMedia('video')">
-    <div style="font-size:22px;margin-bottom:3px">🎬</div><div style="font-size:11px;color:var(--t3)" id="tx-add-video">Добавить видео</div>
+  <div style="border:2px dashed var(--brd2);border-radius:10px;padding:15px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="uploadMedia('video')">
+    <div style="font-size:22px;margin-bottom:3px">🎬</div><div style="font-size:11px;color:var(--t3)">Добавить видео</div>
   </div>
 </div>
       <button class="btn-primary" onclick="submitListing()"><i class="fas fa-rocket"></i> <span id="tx-publish-btn">Опубликовать</span></button>
