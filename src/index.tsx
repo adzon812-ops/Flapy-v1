@@ -496,7 +496,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <option>Есиль</option><option>Алматинский</option><option>Сарыарка</option><option>Байконыр</option><option>Нура</option><option>Бостандыкский</option>
       </select>
       <label class="flabel">Цена ₸</label>
-      <input class="finput" type="number" id="a-price" placeholder="10000000" value="10000000" oninput="formatPriceInput(this)">
+      <i<input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
       <label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
       <textarea class="finput" id="a-desc" placeholder="Опишите объект или нажмите AI..."></textarea>
       <div id="ai-box-wrap" style="display:none">
