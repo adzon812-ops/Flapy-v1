@@ -1,4 +1,3 @@
-
 /* FLAPY app.js v14.0 — FINAL WORKING VERSION */
 'use strict';
 
