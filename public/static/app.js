@@ -1,6 +1,21 @@
-/* FLAPY app.js v14.0 — FINAL WORKING VERSION */
+/* FLAPY app.js v16.0 — SUPABASE SYNC + ALL FEATURES v14.0 */
 'use strict';
 
+/* ════════════════════════════════════════════════════
+   🔐 SUPABASE CONFIG (ТВОИ КЛЮЧИ)
+═══════════════════════════════════════════════════ */
+var SUPABASE_URL = 'https://qjmfudpqfyanigizwvze.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbWZ1ZHBxZnlhbmlnaXp3dnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzUxODEsImV4cCI6MjA5MDYxMTE4MX0.XWBc3DAjOVMZ80VIlf4zZ1TgqtaxLDczdrPWwdpkkII';
+
+var db = null;
+if (typeof window !== 'undefined' && window.supabase) {
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('✅ Supabase подключён');
+}
+
+/* ════════════════════════════════════════════════════
+   📊 STATE (как в v14.0)
+═══════════════════════════════════════════════════ */
 var listings = [], calEvents = [], curUser = null, curFilter = 'all', curLang = 'ru', listTab = 'obj',
 notifications = [],
 airaMessages = [],
@@ -9,44 +24,123 @@ uploadedMedia = {photos:[], videos:[]};
 var T = {ru:{call:'Позвонить',msg:'Написать',profile:'Профиль',logout:'Выйти'},kz:{call:'Қоңырау',msg:'Жазу',profile:'Профиль',logout:'Шығу'}};
 function t(k){return (T[curLang]&&T[curLang][k])||(T.ru[k]||k);}
 
+/* ════════════════════════════════════════════════════
+   🚀 INIT
+═══════════════════════════════════════════════════ */
 window.addEventListener('load',function(){
-  // ✅ Восстанавливаем пользователя из localStorage
+  // Восстанавливаем пользователя из localStorage
   try{var s=localStorage.getItem('fp_user');if(s)curUser=JSON.parse(s);}catch(e){}
   
-  // Загружаем данные
+  // Загружаем данные из localStorage (fallback)
   try{var l=localStorage.getItem('fp_listings');if(l)listings=JSON.parse(l);}catch(e){}
   try{var n=localStorage.getItem('fp_notifications');if(n)notifications=JSON.parse(n);}catch(e){}
   
   curLang=localStorage.getItem('fp_lang')||'ru';applyLangUI();
   if(curUser){renderAuthSlot();updateAiraBadge();}
   updateNavVisibility();updateNotificationsCount();
+  
   var ld=document.getElementById('loader');if(ld)ld.style.display='none';
-  if(listings.length===0)listings=getFallbackListings();
-  renderListings();
-  console.log('✅ Flapy app.js v14.1 loaded - session restored');
+  
+  // Загружаем из Supabase (если есть подключение)
+  if (db) {
+    loadFromSupabase();
+  } else if (listings.length === 0) {
+    listings = getFallbackListings();
+    renderListings();
+  }
+  
+  console.log('✅ Flapy app.js v16.0 loaded');
 });
-function updateNavVisibility(){
-  var p=document.getElementById('nav-plus-wrap'),m=document.getElementById('n-more');
-  if(curUser){if(p)p.style.display='block';if(m)m.style.display='flex';}
-  else{if(p)p.style.display='none';if(m)m.style.display='none';}
+
+/* ════════════════════════════════════════════════════
+   📥 LOAD FROM SUPABASE
+═══════════════════════════════════════════════════ */
+function loadFromSupabase() {
+  if (!db) return;
+  
+  db.from('listings').select('*').order('created_at', {ascending: false}).then(function(result) {
+    if (result.error) {
+      console.warn('⚠️ Supabase error, using localStorage:', result.error);
+      if (listings.length === 0) listings = getFallbackListings();
+      renderListings();
+      return;
+    }
+    
+    // Преобразуем: в базе "description", в коде "desc"
+    listings = (result.data || []).map(function(item) {
+      return {
+        id: item.id,
+        type: item.type,
+        rooms: item.rooms,
+        area: item.area,
+        city: item.city,
+        district: item.district,
+        price: item.price,
+        desc: item.description, // ✅ ВАЖНО: база → код
+        realtor: item.realtor_name || 'Риэлтор',
+        realtorFull: item.realtor_name || 'Риэлтор',
+        agency: item.agency || '-',
+        phone: item.phone || '+7 701 234 56 78',
+        badge: item.badge || 'Новое',
+        tags: item.tags || [],
+        hasVideo: item.has_video || false,
+        liked: false,
+        photos: item.photo_urls || [],
+        videos: [],
+        createdAt: item.created_at
+      };
+    });
+    
+    console.log('✅ Загружено из Supabase:', listings.length);
+    saveToListingsLocal(); // Сохраняем в localStorage для оффлайна
+    renderListings();
+    
+  }).catch(function(e) {
+    console.warn('⚠️ Supabase fetch failed, using localStorage');
+    if (listings.length === 0) listings = getFallbackListings();
+    renderListings();
+  });
 }
 
-function go(id){
-  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
-  var el=document.getElementById(id);if(el)el.classList.add('on');
-  if(id==='s-prof')renderProf();
-  if(id==='s-notif')renderNotifications();
-  if(id==='s-aira')renderAiraChat();
-  if(id==='s-add'){uploadedMedia={photos:[],videos:[]};renderAddListing();}
-  if(id==='s-search')renderListings();
+/* ════════════════════════════════════════════════════
+   💾 SAVE TO SUPABASE + LOCALSTORAGE
+═══════════════════════════════════════════════════ */
+function saveToListingsLocal() {
+  try {
+    // Сохраняем в localStorage (для быстрого доступа и оффлайна)
+    localStorage.setItem('fp_listings', JSON.stringify(listings));
+  } catch(e) {
+    console.warn('⚠️ localStorage save failed');
+  }
 }
 
-function nav(el){document.querySelectorAll('.nav-it').forEach(function(n){n.classList.remove('on');});if(el)el.classList.add('on');}
-function showMore(){openM('m-more');}
-function openM(id){var e=document.getElementById(id);if(e)e.classList.add('on');}
-function closeM(id){var e=document.getElementById(id);if(e)e.classList.remove('on');}
-function closeOvl(e,id){if(e.target.id===id)closeM(id);}
+function saveToSupabase(listing) {
+  if (!db || !curUser) return Promise.resolve();
+  
+  return db.from('listings').insert([{
+    realtor_id: curUser.id,
+    type: listing.type,
+    rooms: listing.rooms,
+    area: listing.area,
+    city: listing.city,
+    district: listing.district,
+    price: listing.price,
+    description: listing.desc, // ✅ ВАЖНО: код → база
+    phone: listing.phone,
+    badge: listing.badge,
+    photo_urls: listing.photos,
+    tiktok_url: listing.tiktok || '',
+    has_video: listing.hasVideo,
+    tags: listing.tags
+  }]).then(function(result) {
+    if (result.error) throw result.error;
+    console.log('✅ Saved to Supabase');
+  });
+}
 
+/* ════════════════════════════════════════════════════
+   📋 FALLBACK DATA (как в v14.0)
+═══════════════════════════════════════════════════ */
 function getFallbackListings(){
   return [
     {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:78500000,hasVideo:false,realtor:'Айгерим К.',realtorFull:'Айгерим Касымова',rating:4.9,agency:'Century 21',badge:'Новое',desc:'Просторная 3-комнатная квартира с панорамным видом.',phone:'+7 701 234 56 78',liked:false,photos:[],videos:[]},
@@ -54,7 +148,6 @@ function getFallbackListings(){
   ];
 }
 
-function saveListings(){try{localStorage.setItem('fp_listings',JSON.stringify(listings));}catch(e){console.error('Save error:',e);}}
 function saveNotifications(){try{localStorage.setItem('fp_notifications',JSON.stringify(notifications));}catch(e){}}
 
 function updateNotificationsCount(){
@@ -105,10 +198,11 @@ function genAI(){var rooms=document.getElementById('a-rooms')?document.getElemen
 
 function useAI(){var ai=document.getElementById('ai-txt')?document.getElementById('ai-txt').textContent:'';var desc=document.getElementById('a-desc');var wrap=document.getElementById('ai-box-wrap');if(desc)desc.value=ai;if(wrap)wrap.style.display='none';}
 
+/* ════════════════════════════════════════════════════
+   📤 SUBMIT LISTING (SUPABASE + LOCAL)
+═══════════════════════════════════════════════════ */
 function submitListing(){
   console.log('📝 Submit started');
-  console.log('📸 Uploaded photos:',uploadedMedia.photos?uploadedMedia.photos.length:0);
-  console.log('🎥 Uploaded videos:',uploadedMedia.videos?uploadedMedia.videos.length:0);
   
   var priceEl=document.getElementById('a-price');
   var descEl=document.getElementById('a-desc');
@@ -130,16 +224,11 @@ function submitListing(){
   var city=cityEl?cityEl.value:'Астана';
   var district=districtEl?districtEl.value:'Есиль';
   
-  console.log('💰 Price:',price,'Desc:',desc.substring(0,30));
-  
   if(!desc||desc.trim()===''){alert('Введите описание');return;}
   if(price<=0){alert('Введите цену');return;}
   
-  // ВАЖНО: копируем массивы правильно с slice()
   var photosCopy = uploadedMedia && uploadedMedia.photos ? uploadedMedia.photos.slice() : [];
   var videosCopy = uploadedMedia && uploadedMedia.videos ? uploadedMedia.videos.slice() : [];
-  
-  console.log('📋 Creating listing with photos:',photosCopy.length,'videos:',videosCopy.length);
   
   var newListing={
     id:Date.now(),
@@ -163,10 +252,18 @@ function submitListing(){
     createdAt:new Date().toISOString()
   };
   
-  console.log('✅ New listing created:',newListing);
+  // 1. Добавляем в локальный массив (мгновенно)
   listings.unshift(newListing);
-  saveListings();
+  saveToListingsLocal();
   renderListings();
+  
+  // 2. Сохраняем в Supabase (фоном)
+  if (db && curUser) {
+    saveToSupabase(newListing).catch(function(e) {
+      console.warn('⚠️ Supabase save failed, but local save OK');
+    });
+  }
+  
   closeM('m-add');
   priceEl.value='';descEl.value='';uploadedMedia={photos:[],videos:[]};
   toast('✅ Объект опубликован!');
@@ -183,14 +280,8 @@ function uploadMedia(type){
   
   input.onchange=function(e){
     var files=e.target.files;
-    console.log('📂 Files selected:',files.length,'type:',type);
+    if(!files||files.length===0)return;
     
-    if(!files||files.length===0){
-      console.log('No files selected');
-      return;
-    }
-    
-    // Проверка размера для видео (макс 10MB)
     if(type==='video'){
       for(var i=0;i<files.length;i++){
         if(files[i].size>10*1024*1024){
@@ -204,18 +295,14 @@ function uploadMedia(type){
     
     var loaded=0;
     Array.from(files).forEach(function(file){
-      console.log('📄 Loading:',file.name,file.type,file.size);
       var reader=new FileReader();
       reader.onload=function(evt){
-        console.log('✅ File loaded:',file.name);
         if(type==='photo'){
           if(!uploadedMedia.photos)uploadedMedia.photos=[];
           uploadedMedia.photos.push(evt.target.result);
-          console.log('📸 Total photos:',uploadedMedia.photos.length);
         }else{
           if(!uploadedMedia.videos)uploadedMedia.videos=[];
           uploadedMedia.videos.push(evt.target.result);
-          console.log('🎥 Total videos:',uploadedMedia.videos.length);
         }
         loaded++;
         if(loaded===files.length){
@@ -253,7 +340,6 @@ function toast(msg,ms){var el=document.getElementById('toast');if(!el){el=docume
 
 function callRealtor(phone){toast('📞 '+phone);}
 
-// НОВАЯ ФУНКЦИЯ для просмотра фото
 function viewPhoto(src){
   console.log('🖼️ View photo');
   var win=window.open('','_blank');
@@ -273,7 +359,6 @@ function openDetail(id){
   
   var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':l.type==='commercial'?'🏪':'';
   
-  // ПРОВЕРКА что photos и videos это массивы
   var photosArray = Array.isArray(l.photos) ? l.photos : [];
   var videosArray = Array.isArray(l.videos) ? l.videos : [];
   
@@ -327,7 +412,6 @@ function renderListings(){
     var ini=(l.realtor||'R').charAt(0);
     var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':l.type==='commercial'?'🏪':'';
     
-    // Показываем первое фото если есть
     var photosArray = Array.isArray(l.photos) ? l.photos : [];
     var firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
     
@@ -358,3 +442,25 @@ function toggleTheme(){var cur=document.documentElement.getAttribute('data-theme
 function applyTheme(th){document.documentElement.setAttribute('data-theme',th);var btn=document.getElementById('btn-theme');if(btn)btn.innerHTML=th==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>';}
 function setLang(lang){curLang=lang;localStorage.setItem('fp_lang',lang);applyLangUI();}
 function applyLangUI(){var ru=document.getElementById('lo-ru'),kz=document.getElementById('lo-kz');if(ru)ru.classList.toggle('on',curLang==='ru');if(kz)kz.classList.toggle('on',curLang==='kz');document.querySelectorAll('[data-ru]').forEach(function(el){var v=el.getAttribute('data-'+curLang);if(v)el.textContent=v;});renderListings();}
+
+function updateNavVisibility(){
+  var p=document.getElementById('nav-plus-wrap'),m=document.getElementById('n-more');
+  if(curUser){if(p)p.style.display='block';if(m)m.style.display='flex';}
+  else{if(p)p.style.display='none';if(m)m.style.display='none';}
+}
+
+function go(id){
+  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
+  var el=document.getElementById(id);if(el)el.classList.add('on');
+  if(id==='s-prof')renderProf();
+  if(id==='s-notif')renderNotifications();
+  if(id==='s-aira')renderAiraChat();
+  if(id==='s-add'){uploadedMedia={photos:[],videos:[]};renderAddListing();}
+  if(id==='s-search')renderListings();
+}
+
+function nav(el){document.querySelectorAll('.nav-it').forEach(function(n){n.classList.remove('on');});if(el)el.classList.add('on');}
+function showMore(){openM('m-more');}
+function openM(id){var e=document.getElementById(id);if(e)e.classList.add('on');}
+function closeM(id){var e=document.getElementById(id);if(e)e.classList.remove('on');}
+function closeOvl(e,id){if(e.target.id===id)closeM(id);}
