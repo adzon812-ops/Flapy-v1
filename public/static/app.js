@@ -1,38 +1,88 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════
-   FLAPY v1.0 — HOME IS WHERE THE HEART IS
+   FLAPY v1.1 — WITH ALL ELEMENTS
 ═══════════════════════════════════════════════════ */
 
-// Supabase config
-const FLAPY_SUPABASE_URL = 'https://xxxxx.supabase.co';
-const FLAPY_SUPABASE_KEY = 'your-anon-key-here';
+// ⚠️ ЗАМЕНИ НА СВОИ КЛЮЧИ SUPABASE!
+const FLAPY_SUPABASE_URL = https://qjmfudpqfyanigizwvze.supabase.co;
+const FLAPY_SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbWZ1ZHBxZnlhbmlnaXp3dnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzUxODEsImV4cCI6MjA5MDYxMTE4MX0.XWBc3DAjOVMZ80VIlf4zZ1TgqtaxLDczdrPWwdpkkII;
 
-// Initialize Supabase (only once)
+// Init Supabase
 var flapyDB = null;
 if (typeof window !== 'undefined' && window.supabase) {
-  flapyDB = window.supabase.createClient(FLAPY_SUPABASE_URL, FLAPY_SUPABASE_KEY);
+  try {
+    flapyDB = window.supabase.createClient(FLAPY_SUPABASE_URL, FLAPY_SUPABASE_KEY);
+  } catch(e) {
+    console.warn('Supabase init failed:', e);
+  }
 }
 
 // State
 var curUser = null;
 var listings = [];
 var uploadedMedia = {photos: []};
+var curLang = 'ru';
 
-// Warm messages
-var WARM_MSG = {
-  welcome: 'Добро пожаловать домой 🏡',
-  call: 'Позвонить',
-  whatsapp: 'Написать',
-  empty: 'Здесь пока тихо... 🌿'
+// Translations
+var T = {
+  ru: {
+    tagline: 'Ваш умный помощник на рынке жилья',
+    objects: 'Объекты',
+    exchange: 'Обмен',
+    all: 'Все',
+    apartments: 'Квартиры',
+    houses: 'Дома',
+    commercial: 'Коммерция',
+    video: '🎬 Видео',
+    call: 'Позвонить',
+    whatsapp: 'Написать',
+    login: 'Войти',
+    welcome: 'Добро пожаловать домой 🏡',
+    empty: 'Пока нет объектов'
+  },
+  kz: {
+    tagline: 'Жылжымайтын мүлік нарығындағы көмекші',
+    objects: 'Нысандар',
+    exchange: 'Айырбас',
+    all: 'Барлығы',
+    apartments: 'Пәтерлер',
+    houses: 'Үйлер',
+    commercial: 'Коммерция',
+    video: '🎬 Бейне',
+    call: 'Қоңырау',
+    whatsapp: 'Жазу',
+    login: 'Кіру',
+    welcome: 'Үйге қош келдіңіз 🏡',
+    empty: 'Әзірге нысандар жоқ'
+  }
 };
+
+function t(key) {
+  return (T[curLang] && T[curLang][key]) || T.ru[key] || key;
+}
 
 // Loader
 function showLoader() {
   var loader = document.getElementById('loader');
   if (!loader) return;
   
-  loader.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:fadeIn 0.5s ease"><div style="font-size:24px;font-weight:800;color:#1E2D5A">Flapy<span style="color:#F47B20">™</span></div><div style="font-size:13px;color:#6B7280">' + WARM_MSG.welcome + '</div><div style="width:60px;height:3px;background:#E5E7EB;border-radius:2px;overflow:hidden"><div style="width:100%;height:100%;background:linear-gradient(90deg,#1E2D5A,#F47B20);animation:loadProgress 1.5s ease forwards"></div></div></div><style>@keyframes loadProgress{0%{width:0}100%{width:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}</style>';
+  loader.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:fadeIn 0.5s ease">
+      <div style="position:relative;width:80px;height:80px">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1E2D5A,#4A6FA5);clip-path:polygon(50% 0%,0% 40%,0% 100%,100% 100%,100% 40%);animation:float 3s ease-in-out infinite"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;background:#F47B20;clip-path:path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');animation:pulse 1.5s ease-in-out infinite"></div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:800;color:#1E2D5A">Flapy<span style="color:#F47B20">™</span></div>
+        <div style="font-size:13px;color:#6B7280;margin-top:4px">${t('welcome')}</div>
+      </div>
+      <div style="width:60px;height:3px;background:#E5E7EB;border-radius:2px;overflow:hidden">
+        <div style="width:100%;height:100%;background:linear-gradient(90deg,#1E2D5A,#F47B20);animation:progress 1.5s ease forwards"></div>
+      </div>
+    </div>
+    <style>@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}}@keyframes progress{0%{width:0}100%{width:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}</style>
+  `;
   
   setTimeout(function() {
     loader.style.opacity = '0';
@@ -43,8 +93,8 @@ function showLoader() {
 // Init
 window.addEventListener('load', async function() {
   showLoader();
+  applyLang();
   
-  // Check session
   if (flapyDB) {
     try {
       var sessionData = await flapyDB.auth.getSession();
@@ -57,20 +107,63 @@ window.addEventListener('load', async function() {
     }
   }
   
-  // Load listings
   await loadListings();
+  setupTabs();
 });
+
+// Setup tabs
+function setupTabs() {
+  // Objects tab
+  var objTab = document.getElementById('tab-objects');
+  var exchTab = document.getElementById('tab-exchange');
+  
+  if (objTab) objTab.addEventListener('click', function() {
+    curFilter = 'all';
+    setActiveTab(objTab, exchTab);
+    renderFeed();
+  });
+  
+  if (exchTab) exchTab.addEventListener('click', function() {
+    curFilter = 'exchange';
+    setActiveTab(exchTab, objTab);
+    renderFeed();
+  });
+  
+  // Filter chips
+  var chips = document.querySelectorAll('.filter-chip');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener('click', function() {
+      var type = this.getAttribute('data-type');
+      curFilter = type;
+      
+      // Update active state
+      for (var j = 0; j < chips.length; j++) {
+        chips[j].classList.remove('active');
+      }
+      this.classList.add('active');
+      
+      renderFeed();
+    });
+  }
+}
+
+function setActiveTab(active, inactive) {
+  active.classList.add('active');
+  inactive.classList.remove('active');
+}
 
 // Load listings
 async function loadListings() {
   if (!flapyDB) {
-    listings = [];
-    renderFeed();
+    console.warn('No Supabase connection');
     return;
   }
   
   try {
-    var result = await flapyDB.from('listings').select('*, realtors(name, agency, phone, whatsapp)').order('created_at', {ascending: false});
+    var result = await flapyDB
+      .from('listings')
+      .select('*, realtors(name, agency, phone, whatsapp)')
+      .order('created_at', {ascending: false});
     
     if (result.error) throw result.error;
     
@@ -90,15 +183,14 @@ async function loadListings() {
         whatsapp: (item.realtors && item.realtors.whatsapp) ? item.realtors.whatsapp : item.phone,
         photos: item.photo_urls || [],
         tiktok: item.tiktok_url,
-        badge: item.badge
+        badge: item.badge,
+        createdAt: item.created_at
       };
     });
     
     renderFeed();
   } catch(e) {
     console.error('Load error:', e);
-    listings = [];
-    renderFeed();
   }
 }
 
@@ -107,15 +199,23 @@ function renderFeed() {
   var feed = document.getElementById('s-feed');
   if (!feed) return;
   
-  if (listings.length === 0) {
-    feed.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6B7280;text-align:center;padding:40px"><div style="font-size:64px;margin-bottom:16px">🏡</div><div style="font-size:18px;font-weight:600;color:#1E2D5A;margin-bottom:8px">' + WARM_MSG.empty + '</div></div>';
+  var filtered = listings;
+  if (curFilter === 'exchange') {
+    // In real app, filter by exchange field
+  } else if (curFilter && curFilter !== 'all') {
+    filtered = listings.filter(function(l) {
+      return l.type === curFilter;
+    });
+  }
+  
+  if (filtered.length === 0) {
+    feed.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#6B7280;text-align:center;padding:40px"><div style="font-size:18px;font-weight:600">' + t('empty') + '</div></div>';
     return;
   }
   
   var html = '';
-  for (var i = 0; i < listings.length; i++) {
-    var l = listings[i];
-    html += createFeedCard(l);
+  for (var i = 0; i < filtered.length; i++) {
+    html += createFeedCard(filtered[i]);
   }
   
   feed.innerHTML = html;
@@ -126,7 +226,7 @@ function createFeedCard(l) {
   if (l.photos && l.photos.length > 0) {
     mediaHtml = '<img src="' + l.photos[0] + '" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">';
   } else if (l.tiktok) {
-    mediaHtml = '<div style="width:100%;height:100%;position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;color:white"><div style="font-size:48px">🎵</div></div>';
+    mediaHtml = '<div style="width:100%;height:100%;position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;color:white"><div style="text-align:center"><div style="font-size:48px">🎵</div><div style="font-size:14px;margin-top:8px">TikTok видео</div></div></div>';
   } else {
     mediaHtml = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:120px;opacity:0.1">🏢</div>';
   }
@@ -135,13 +235,14 @@ function createFeedCard(l) {
     mediaHtml +
     '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,transparent 25%,rgba(0,0,0,0.6) 70%,rgba(0,0,0,0.9) 100%)"></div>' +
     '<div style="position:absolute;bottom:0;left:0;right:0;padding:20px 16px 100px;color:white">' +
+    (l.badge ? '<div style="display:inline-block;padding:4px 10px;background:#F47B20;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:8px">' + l.badge + '</div>' : '') +
     '<div style="font-size:12px;opacity:0.8;margin-bottom:4px">📍 ' + l.city + ', ' + l.district + '</div>' +
     '<div style="font-size:24px;font-weight:800;margin-bottom:8px">' + fmtPrice(l.price) + ' ₸</div>' +
     '<div style="font-size:14px;opacity:0.9;margin-bottom:8px">' + l.rooms + '-комнатная · ' + l.area + ' м²</div>' +
     '<div style="font-size:13px;opacity:0.8;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:16px">' + l.desc + '</div>' +
     '<div style="display:flex;gap:10px">' +
-    '<button onclick="callRealtor(\'' + l.phone + '\')" style="flex:1;padding:12px;background:#1E2D5A;color:white;border:none;border-radius:10px;font-weight:600">📞 ' + WARM_MSG.call + '</button>' +
-    '<button onclick="openWhatsApp(\'' + l.whatsapp + '\',\'' + l.id + '\')" style="flex:1;padding:12px;background:#25D366;color:white;border:none;border-radius:10px;font-weight:600">💬 ' + WARM_MSG.whatsapp + '</button>' +
+    '<button onclick="callRealtor(\'' + l.phone + '\')" style="flex:1;padding:12px;background:#1E2D5A;color:white;border:none;border-radius:10px;font-weight:600">📞 ' + t('call') + '</button>' +
+    '<button onclick="openWhatsApp(\'' + l.whatsapp + '\',\'' + l.id + '\')" style="flex:1;padding:12px;background:#25D366;color:white;border:none;border-radius:10px;font-weight:600">💬 ' + t('whatsapp') + '</button>' +
     '</div></div></div>';
 }
 
@@ -174,7 +275,7 @@ function renderAuthSlot() {
     var name = (curUser.user_metadata && curUser.user_metadata.name) ? curUser.user_metadata.name : curUser.email.split('@')[0];
     slot.innerHTML = '<div style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 12px;background:rgba(30,45,90,0.1);border-radius:20px" onclick="go(\'s-prof\')"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1E2D5A,#4A6FA5);display:flex;align-items:center;justify-content:center;color:white;font-weight:700">' + name.charAt(0) + '</div><span style="font-weight:600;color:#1E2D5A;font-size:13px">' + name.split(' ')[0] + '</span></div>';
   } else {
-    slot.innerHTML = '<button class="login-btn" onclick="openM(\'m-auth\')">Войти</button>';
+    slot.innerHTML = '<button class="login-btn" onclick="openM(\'m-auth\')">' + t('login') + '</button>';
   }
 }
 
@@ -193,7 +294,7 @@ async function doLogin() {
   }
   
   if (!flapyDB) {
-    toast('Ошибка подключения');
+    toast('Ошибка подключения к базе');
     return;
   }
   
@@ -234,7 +335,7 @@ async function doReg() {
   }
   
   if (!flapyDB) {
-    toast('Ошибка подключения');
+    toast('Ошибка подключения к базе');
     return;
   }
   
@@ -247,7 +348,6 @@ async function doReg() {
     
     if (result.error) throw result.error;
     
-    // Save realtor
     await flapyDB.from('realtors').insert([{
       id: result.data.user.id,
       email: email,
@@ -304,12 +404,11 @@ async function submitListing() {
   }
   
   if (!flapyDB) {
-    toast('Ошибка подключения');
+    toast('Ошибка подключения к базе');
     return;
   }
   
   try {
-    var error = null;
     var result = await flapyDB.from('listings').insert([{
       realtor_id: curUser.id,
       type: typeEl ? typeEl.value : 'apartment',
@@ -331,7 +430,6 @@ async function submitListing() {
     closeM('m-add');
     uploadedMedia = {photos: []};
     
-    // Reset form
     if (priceEl) priceEl.value = '';
     if (descEl) descEl.value = '';
     
@@ -450,7 +548,26 @@ function authTab(tab) {
 function setLang(lang) {
   curLang = lang;
   localStorage.setItem('fp_lang', lang);
+  applyLang();
   toast(lang === 'kz' ? '🇰 Қазақ тілі' : '🇷 Русский');
+}
+
+function applyLang() {
+  // Update all elements with data-t attribute
+  var elements = document.querySelectorAll('[data-t]');
+  for (var i = 0; i < elements.length; i++) {
+    var key = elements[i].getAttribute('data-t');
+    if (T[curLang] && T[curLang][key]) {
+      elements[i].textContent = T[curLang][key];
+    }
+  }
+  
+  // Update language switcher
+  var ruBtn = document.getElementById('lang-ru');
+  var kzBtn = document.getElementById('lang-kz');
+  
+  if (ruBtn) ruBtn.classList.toggle('active', curLang === 'ru');
+  if (kzBtn) kzBtn.classList.toggle('active', curLang === 'kz');
 }
 
 function toggleTheme() {
