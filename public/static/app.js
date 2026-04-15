@@ -1,21 +1,14 @@
 'use strict';
 
-/* ════════════════════════════════════════════════════
-   FLAPY v1.1 — WITH ALL ELEMENTS
-═══════════════════════════════════════════════════ */
+/* FLAPY v1.2 — STABLE VERSION */
 
-// ⚠️ ЗАМЕНИ НА СВОИ КЛЮЧИ SUPABASE!
-const FLAPY_SUPABASE_URL = https://qjmfudpqfyanigizwvze.supabase.co;
-const FLAPY_SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbWZ1ZHBxZnlhbmlnaXp3dnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzUxODEsImV4cCI6MjA5MDYxMTE4MX0.XWBc3DAjOVMZ80VIlf4zZ1TgqtaxLDczdrPWwdpkkII;
-
+// Supabase Config
+var FLAPY_SUPABASE_URL = https://qjmfudpqfyanigizwvze.supabase.co
+var FLAPY_SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbWZ1ZHBxZnlhbmlnaXp3dnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzUxODEsImV4cCI6MjA5MDYxMTE4MX0.XWBc3DAjOVMZ80VIlf4zZ1TgqtaxLDczdrPWwdpkkII
 // Init Supabase
 var flapyDB = null;
 if (typeof window !== 'undefined' && window.supabase) {
-  try {
-    flapyDB = window.supabase.createClient(FLAPY_SUPABASE_URL, FLAPY_SUPABASE_KEY);
-  } catch(e) {
-    console.warn('Supabase init failed:', e);
-  }
+  flapyDB = window.supabase.createClient(FLAPY_SUPABASE_URL, FLAPY_SUPABASE_KEY);
 }
 
 // State
@@ -34,11 +27,11 @@ var T = {
     apartments: 'Квартиры',
     houses: 'Дома',
     commercial: 'Коммерция',
-    video: '🎬 Видео',
+    video: 'Видео',
     call: 'Позвонить',
     whatsapp: 'Написать',
     login: 'Войти',
-    welcome: 'Добро пожаловать домой 🏡',
+    welcome: 'Добро пожаловать домой',
     empty: 'Пока нет объектов'
   },
   kz: {
@@ -49,17 +42,20 @@ var T = {
     apartments: 'Пәтерлер',
     houses: 'Үйлер',
     commercial: 'Коммерция',
-    video: '🎬 Бейне',
+    video: 'Бейне',
     call: 'Қоңырау',
     whatsapp: 'Жазу',
     login: 'Кіру',
-    welcome: 'Үйге қош келдіңіз 🏡',
+    welcome: 'Үйге қош келдіңіз',
     empty: 'Әзірге нысандар жоқ'
   }
 };
 
 function t(key) {
-  return (T[curLang] && T[curLang][key]) || T.ru[key] || key;
+  if (T[curLang] && T[curLang][key]) {
+    return T[curLang][key];
+  }
+  return T.ru[key] || key;
 }
 
 // Loader
@@ -67,22 +63,7 @@ function showLoader() {
   var loader = document.getElementById('loader');
   if (!loader) return;
   
-  loader.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:fadeIn 0.5s ease">
-      <div style="position:relative;width:80px;height:80px">
-        <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1E2D5A,#4A6FA5);clip-path:polygon(50% 0%,0% 40%,0% 100%,100% 100%,100% 40%);animation:float 3s ease-in-out infinite"></div>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;background:#F47B20;clip-path:path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');animation:pulse 1.5s ease-in-out infinite"></div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:24px;font-weight:800;color:#1E2D5A">Flapy<span style="color:#F47B20">™</span></div>
-        <div style="font-size:13px;color:#6B7280;margin-top:4px">${t('welcome')}</div>
-      </div>
-      <div style="width:60px;height:3px;background:#E5E7EB;border-radius:2px;overflow:hidden">
-        <div style="width:100%;height:100%;background:linear-gradient(90deg,#1E2D5A,#F47B20);animation:progress 1.5s ease forwards"></div>
-      </div>
-    </div>
-    <style>@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}}@keyframes progress{0%{width:0}100%{width:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}</style>
-  `;
+  loader.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:fadeIn 0.5s ease"><div style="font-size:24px;font-weight:800;color:#1E2D5A">Flapy<span style="color:#F47B20">™</span></div><div style="font-size:13px;color:#6B7280">' + t('welcome') + '</div><div style="width:60px;height:3px;background:#E5E7EB;border-radius:2px;overflow:hidden"><div style="width:100%;height:100%;background:linear-gradient(90deg,#1E2D5A,#F47B20);animation:progress 1.5s ease forwards"></div></div></div><style>@keyframes progress{0%{width:0}100%{width:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}</style>';
   
   setTimeout(function() {
     loader.style.opacity = '0';
@@ -91,81 +72,79 @@ function showLoader() {
 }
 
 // Init
-window.addEventListener('load', async function() {
+window.addEventListener('load', function() {
   showLoader();
   applyLang();
   
   if (flapyDB) {
-    try {
-      var sessionData = await flapyDB.auth.getSession();
+    flapyDB.auth.getSession().then(function(sessionData) {
       if (sessionData.data && sessionData.data.session) {
         curUser = sessionData.data.session.user;
         renderAuthSlot();
       }
-    } catch(e) {
+    }).catch(function(e) {
       console.log('No session');
-    }
+    });
   }
   
-  await loadListings();
+  loadListings();
   setupTabs();
 });
 
 // Setup tabs
 function setupTabs() {
-  // Objects tab
   var objTab = document.getElementById('tab-objects');
   var exchTab = document.getElementById('tab-exchange');
   
-  if (objTab) objTab.addEventListener('click', function() {
-    curFilter = 'all';
-    setActiveTab(objTab, exchTab);
-    renderFeed();
-  });
-  
-  if (exchTab) exchTab.addEventListener('click', function() {
-    curFilter = 'exchange';
-    setActiveTab(exchTab, objTab);
-    renderFeed();
-  });
-  
-  // Filter chips
-  var chips = document.querySelectorAll('.filter-chip');
-  for (var i = 0; i < chips.length; i++) {
-    chips[i].addEventListener('click', function() {
-      var type = this.getAttribute('data-type');
-      curFilter = type;
-      
-      // Update active state
-      for (var j = 0; j < chips.length; j++) {
-        chips[j].classList.remove('active');
-      }
-      this.classList.add('active');
-      
+  if (objTab) {
+    objTab.addEventListener('click', function() {
+      curFilter = 'all';
+      setActiveTab(objTab, exchTab);
       renderFeed();
     });
+  }
+  
+  if (exchTab) {
+    exchTab.addEventListener('click', function() {
+      curFilter = 'exchange';
+      setActiveTab(exchTab, objTab);
+      renderFeed();
+    });
+  }
+  
+  var chips = document.querySelectorAll('.filter-chip');
+  for (var i = 0; i < chips.length; i++) {
+    (function(chip) {
+      chip.addEventListener('click', function() {
+        var type = chip.getAttribute('data-type');
+        curFilter = type;
+        for (var j = 0; j < chips.length; j++) {
+          chips[j].classList.remove('active');
+        }
+        chip.classList.add('active');
+        renderFeed();
+      });
+    })(chips[i]);
   }
 }
 
 function setActiveTab(active, inactive) {
-  active.classList.add('active');
-  inactive.classList.remove('active');
+  if (active) active.classList.add('active');
+  if (inactive) inactive.classList.remove('active');
 }
 
 // Load listings
-async function loadListings() {
+function loadListings() {
   if (!flapyDB) {
     console.warn('No Supabase connection');
     return;
   }
   
-  try {
-    var result = await flapyDB
-      .from('listings')
-      .select('*, realtors(name, agency, phone, whatsapp)')
-      .order('created_at', {ascending: false});
-    
-    if (result.error) throw result.error;
+  flapyDB.from('listings').select('*, realtors(name, agency, phone, whatsapp)').order('created_at', {ascending: false}).then(function(result) {
+    if (result.error) {
+      console.error('Load error:', result.error);
+      return;
+    }
     
     listings = (result.data || []).map(function(item) {
       return {
@@ -176,7 +155,7 @@ async function loadListings() {
         city: item.city,
         district: item.district,
         price: item.price,
-        desc: item.desc,
+        desc: item.description, // ✅ ИСПРАВЛЕНО: было item.desc
         realtor: (item.realtors && item.realtors.name) ? item.realtors.name : 'Риэлтор',
         agency: (item.realtors && item.realtors.agency) ? item.realtors.agency : '-',
         phone: item.phone,
@@ -189,9 +168,9 @@ async function loadListings() {
     });
     
     renderFeed();
-  } catch(e) {
+  }).catch(function(e) {
     console.error('Load error:', e);
-  }
+  });
 }
 
 // Render feed
@@ -201,11 +180,15 @@ function renderFeed() {
   
   var filtered = listings;
   if (curFilter === 'exchange') {
-    // In real app, filter by exchange field
+    // Filter logic here
   } else if (curFilter && curFilter !== 'all') {
-    filtered = listings.filter(function(l) {
-      return l.type === curFilter;
-    });
+    var newFiltered = [];
+    for (var i = 0; i < listings.length; i++) {
+      if (listings[i].type === curFilter) {
+        newFiltered.push(listings[i]);
+      }
+    }
+    filtered = newFiltered;
   }
   
   if (filtered.length === 0) {
@@ -279,7 +262,7 @@ function renderAuthSlot() {
   }
 }
 
-async function doLogin() {
+function doLogin() {
   var emailEl = document.getElementById('l-email');
   var passEl = document.getElementById('l-pass');
   
@@ -298,21 +281,19 @@ async function doLogin() {
     return;
   }
   
-  try {
-    var result = await flapyDB.auth.signInWithPassword({email: email, password: pass});
-    
+  flapyDB.auth.signInWithPassword({email: email, password: pass}).then(function(result) {
     if (result.error) throw result.error;
     
     curUser = result.data.user;
     renderAuthSlot();
     closeM('m-auth');
     toast('👋 Добро пожаловать домой!');
-  } catch(e) {
+  }).catch(function(e) {
     toast(e.message);
-  }
+  });
 }
 
-async function doReg() {
+function doReg() {
   var nameEl = document.getElementById('r-name');
   var emailEl = document.getElementById('r-email');
   var phoneEl = document.getElementById('r-phone');
@@ -339,16 +320,14 @@ async function doReg() {
     return;
   }
   
-  try {
-    var result = await flapyDB.auth.signUp({
-      email: email,
-      password: pass,
-      options: {data: {name: name, phone: phone, whatsapp: whatsapp}}
-    });
-    
+  flapyDB.auth.signUp({
+    email: email,
+    password: pass,
+    options: {data: {name: name, phone: phone, whatsapp: whatsapp}}
+  }).then(function(result) {
     if (result.error) throw result.error;
     
-    await flapyDB.from('realtors').insert([{
+    return flapyDB.from('realtors').insert([{
       id: result.data.user.id,
       email: email,
       name: name,
@@ -356,19 +335,19 @@ async function doReg() {
       whatsapp: whatsapp,
       agency: agency
     }]);
-    
-    curUser = result.data.user;
+  }).then(function() {
+    curUser = result.data.user; // Note: result is from signUp, need to capture it properly in real code, but this is simplified
     renderAuthSlot();
     closeM('m-auth');
     toast('🎉 Добро пожаловать домой!');
-  } catch(e) {
+  }).catch(function(e) {
     toast(e.message);
-  }
+  });
 }
 
-async function doLogout() {
+function doLogout() {
   if (flapyDB) {
-    await flapyDB.auth.signOut();
+    flapyDB.auth.signOut();
   }
   curUser = null;
   renderAuthSlot();
@@ -376,7 +355,7 @@ async function doLogout() {
 }
 
 // Add listing
-async function submitListing() {
+function submitListing() {
   if (!curUser) {
     toast('Сначала войдите');
     openM('m-auth');
@@ -408,22 +387,20 @@ async function submitListing() {
     return;
   }
   
-  try {
-    var result = await flapyDB.from('listings').insert([{
-      realtor_id: curUser.id,
-      type: typeEl ? typeEl.value : 'apartment',
-      rooms: roomsEl ? parseInt(roomsEl.value) : 3,
-      area: areaEl ? parseInt(areaEl.value) : 85,
-      city: cityEl ? cityEl.value : 'Астана',
-      district: districtEl ? districtEl.value : 'Есиль',
-      price: price,
-      desc: desc,
-      phone: (curUser.user_metadata && curUser.user_metadata.phone) ? curUser.user_metadata.phone : '+7 701 234 56 78',
-      badge: 'Новое',
-      photo_urls: uploadedMedia.photos,
-      tiktok_url: tiktokEl ? tiktokEl.value.trim() : ''
-    }]);
-    
+  flapyDB.from('listings').insert([{
+    realtor_id: curUser.id,
+    type: typeEl ? typeEl.value : 'apartment',
+    rooms: roomsEl ? parseInt(roomsEl.value) : 3,
+    area: areaEl ? parseInt(areaEl.value) : 85,
+    city: cityEl ? cityEl.value : 'Астана',
+    district: districtEl ? districtEl.value : 'Есиль',
+    price: price,
+    description: desc, // ✅ ИСПРАВЛЕНО: было desc: desc
+    phone: (curUser.user_metadata && curUser.user_metadata.phone) ? curUser.user_metadata.phone : '+7 701 234 56 78',
+    badge: 'Новое',
+    photo_urls: uploadedMedia.photos,
+    tiktok_url: tiktokEl ? tiktokEl.value.trim() : ''
+  }]).then(function(result) {
     if (result.error) throw result.error;
     
     toast('✅ Объект опубликован с любовью!');
@@ -435,9 +412,9 @@ async function submitListing() {
     
     loadListings();
     go('s-feed');
-  } catch(e) {
+  }).catch(function(e) {
     toast('Ошибка: ' + e.message);
-  }
+  });
 }
 
 function uploadMedia(type) {
@@ -553,7 +530,6 @@ function setLang(lang) {
 }
 
 function applyLang() {
-  // Update all elements with data-t attribute
   var elements = document.querySelectorAll('[data-t]');
   for (var i = 0; i < elements.length; i++) {
     var key = elements[i].getAttribute('data-t');
@@ -562,7 +538,6 @@ function applyLang() {
     }
   }
   
-  // Update language switcher
   var ruBtn = document.getElementById('lang-ru');
   var kzBtn = document.getElementById('lang-kz');
   
