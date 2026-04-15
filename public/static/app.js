@@ -125,12 +125,35 @@ function submitListing(){
   var district=districtEl?districtEl.value:'Есиль';
   
   console.log('💰 Price:',price,'Desc:',desc.substring(0,30));
+  console.log('📸 Photos:',uploadedMedia.photos?uploadedMedia.photos.length:0);
+  console.log('🎥 Videos:',uploadedMedia.videos?uploadedMedia.videos.length:0);
   
   if(!desc||desc.trim()===''){alert('Введите описание');return;}
   if(price<=0){alert('Введите цену');return;}
   
-  var newListing={id:Date.now(),type:type,rooms:rooms,area:area,city:city,district:district,price:price,desc:desc,realtor:curUser?curUser.name:'Гость',realtorFull:curUser?curUser.name:'Гость',agency:curUser?'Моё агентство':'-',phone:'+7 701 234 56 78',badge:'Новое',tags:[],hasVideo:uploadedMedia&&uploadedMedia.videos&&uploadedMedia.videos.length>0,liked:false,photos:uploadedMedia&&uploadedMedia.photos?uploadedMedia.photos.slice:[],videos:uploadedMedia&&uploadedMedia.videos?uploadedMedia.videos.slice:[],createdAt:new Date().toISOString()};
+  var newListing={
+    id:Date.now(),
+    type:type,
+    rooms:rooms,
+    area:area,
+    city:city,
+    district:district,
+    price:price,
+    desc:desc,
+    realtor:curUser?curUser.name:'Гость',
+    realtorFull:curUser?curUser.name:'Гость',
+    agency:curUser?'Моё агентство':'-',
+    phone:'+7 701 234 56 78',
+    badge:'Новое',
+    tags:[],
+    hasVideo:uploadedMedia&&uploadedMedia.videos&&uploadedMedia.videos.length>0,
+    liked:false,
+    photos:uploadedMedia&&uploadedMedia.photos?uploadedMedia.photos.slice():[],
+    videos:uploadedMedia&&uploadedMedia.videos?uploadedMedia.videos.slice():[],
+    createdAt:new Date().toISOString()
+  };
   
+  console.log('✅ New listing created:',newListing);
   listings.unshift(newListing);
   saveListings();
   renderListings();
