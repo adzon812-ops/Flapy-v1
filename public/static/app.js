@@ -10,20 +10,21 @@ var T = {ru:{call:'Позвонить',msg:'Написать',profile:'Проф�
 function t(k){return (T[curLang]&&T[curLang][k])||(T.ru[k]||k);}
 
 window.addEventListener('load',function(){
-  // НЕ автовход - пользователь сам входит
-  // try{var s=localStorage.getItem('fp_user');if(s)curUser=JSON.parse(s);}catch(e){}
+  // ✅ Восстанавливаем пользователя из localStorage
+  try{var s=localStorage.getItem('fp_user');if(s)curUser=JSON.parse(s);}catch(e){}
   
+  // Загружаем данные
   try{var l=localStorage.getItem('fp_listings');if(l)listings=JSON.parse(l);}catch(e){}
   try{var n=localStorage.getItem('fp_notifications');if(n)notifications=JSON.parse(n);}catch(e){}
+  
   curLang=localStorage.getItem('fp_lang')||'ru';applyLangUI();
   if(curUser){renderAuthSlot();updateAiraBadge();}
   updateNavVisibility();updateNotificationsCount();
   var ld=document.getElementById('loader');if(ld)ld.style.display='none';
   if(listings.length===0)listings=getFallbackListings();
   renderListings();
-  console.log('✅ Flapy app.js v14.0 loaded');
+  console.log('✅ Flapy app.js v14.1 loaded - session restored');
 });
-
 function updateNavVisibility(){
   var p=document.getElementById('nav-plus-wrap'),m=document.getElementById('n-more');
   if(curUser){if(p)p.style.display='block';if(m)m.style.display='flex';}
