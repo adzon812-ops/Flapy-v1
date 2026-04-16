@@ -1,4 +1,4 @@
-/* FLAPY v18.0 — С ЛЮБОВЬЮ И ЗАЩИТОЙ 💙 */
+/* FLAPY v18.0 — ФИНАЛЬНАЯ ВЕРСИЯ */
 'use strict';
 
 const SUPABASE_URL = 'https://qjmfudpqfyanigizwvze.supabase.co';
@@ -22,9 +22,6 @@ const WARM_WORDS = {
   gentle: 'Не спешите. Изучайте. Мы рядом 💙'
 };
 
-/* ════════════════════════════════════════════════════
-   🔐 ADMIN — Ctrl+Shift+A
-═══════════════════════════════════════════════════ */
 document.addEventListener('keydown', function(e){
   if(e.ctrlKey && e.shiftKey && e.key === 'A'){
     e.preventDefault();
@@ -64,15 +61,12 @@ function closeAdminPanel(){const p=document.getElementById('admin-panel');if(p)p
 async function adminViewRealtors(){const{data,error}=await db.from('realtors').select('*');if(error){alert(error.message);return;}let r='👥 РИЭЛТОРЫ:\n\n';data.forEach((x,i)=>{r+=(i+1)+'. '+(x.name||'Без имени')+'\n   '+x.email+'\n\n';});alert(r);}
 async function adminDeleteAll(){if(!confirm('Удалить все объекты?'))return;const{error}=await db.from('listings').delete().neq('id','00000000-0000-0000-0000-000000000000');if(error){alert(error.message);}else{alert('Удалено');location.reload();}}
 
-/* ════════════════════════════════════════════════════
-   🚀 INIT
-═══════════════════════════════════════════════════ */
 window.addEventListener('load',async function(){
   if(localStorage.getItem('fp_admin_session')==='true'){
     curUser={id:'admin-001',email:'admin@flapy.internal',role:'superadmin',user_metadata:{full_name:'Администратор'}};
     await updateAuthUI();
   }else{
-    const{{session}}=await db.auth.getSession();
+    const {data:{session}}=await db.auth.getSession();
     if(session){curUser=session.user;await updateAuthUI();}
   }
   
@@ -81,7 +75,7 @@ window.addEventListener('load',async function(){
   
   await loadListings();
   renderAiraChat();
-  console.log('💙 Flapy загружен с любовью');
+  console.log('💙 Flapy загружен');
 });
 
 async function loadListings(){
@@ -133,7 +127,7 @@ async function submitListing(){
   
   if(error){showWarmToast('❌ '+error.message);return;}
   
-  showWarmToast('✅ Объект создан с любовью!');
+  showWarmToast('✅ Объект создан!');
   closeM('m-add');uploadedMedia={photos:[]};await loadListings();go('s-search');
 }
 
@@ -144,15 +138,15 @@ function contactRealtor(id,type){
   if(!phone){showWarmToast('Номер не указан');return;}
   
   if(type==='whatsapp'){
-    const text=encodeURIComponent('Здравствуйте! 💙\nИнтересует ваше объявление на Flapy:\n'+l.rooms+'-комн., '+l.area+' м²\n'+fmtPrice(l.price)+' ₸');
+    const text=encodeURIComponent('Здравствуйте! 💙\nИнтересует ваше объявление:\n'+l.rooms+'-комн., '+l.area+' м²\n'+fmtPrice(l.price)+' ₸');
     window.open('https://wa.me/'+phone+'?text='+text,'_blank');
   }else{window.location.href='tel:'+phone;}
 }
 
 function toggleFavorite(id){
   const idx=favorites.indexOf(id);
-  if(idx>-1){favorites.splice(idx,1);showWarmToast('🤍 Убрано из сердца');}
-  else{favorites.push(id);showWarmToast('❤️ Сохранено в сердце');}
+  if(idx>-1){favorites.splice(idx,1);showWarmToast('🤍 Убрано');}
+  else{favorites.push(id);showWarmToast('❤️ Сохранено');}
   localStorage.setItem('fp_favs',JSON.stringify(favorites));renderListings();
 }
 
@@ -234,7 +228,7 @@ async function doRegister(){
     email:email,
     password:pass,
     options:{
-      {full_name:name,phone:phone}
+      data:{full_name:name,phone:phone}
     }
   });
   
