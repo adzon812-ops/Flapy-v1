@@ -1,4 +1,4 @@
-/* FLAPY app.js v14.0 — SUPABASE + EXCHANGE */
+/* FLAPY app.js v17.0 — TIKTOK WIN-WIN-WIN + EXCHANGE */
 'use strict';
 
 /* ════════════════════════════════════════════════════
@@ -26,23 +26,33 @@ window.addEventListener('load',function(){
   // Восстанавливаем пользователя
   try{var s=localStorage.getItem('fp_user');if(s)curUser=JSON.parse(s);}catch(e){}
   
+  // ✅ ЗАГРУЗКА ИЗ LOCALSTORAGE (чтобы не пропадало)
+  try{
+    var localListings = localStorage.getItem('fp_listings');
+    if(localListings){
+      listings = JSON.parse(localListings);
+      renderListings();
+    }
+  }catch(e){}
+  
   curLang=localStorage.getItem('fp_lang')||'ru';applyLangUI();
   if(curUser){renderAuthSlot();updateAiraBadge();}
   updateNavVisibility();updateNotificationsCount();
   
   var ld=document.getElementById('loader');if(ld)ld.style.display='none';
   
-  // Загружаем из Supabase
+  // Загружаем из Supabase + сохраняем в localStorage
   if(db){
     db.from('listings').select('*').order('created_at',{ascending:false}).then(function(result){
       if(!result.error && result.data){
         listings = result.data.map(function(i){return {...i, desc: i.description};});
+        localStorage.setItem('fp_listings', JSON.stringify(listings)); // ✅ Сохраняем
         renderListings();
       }
     });
   }
   
-  console.log('✅ Flapy loaded');
+  console.log('✅ Flapy v17.0 loaded');
 });
 
 /* ════════════════════════════════════════════════════
@@ -99,7 +109,7 @@ function genAI(){var rooms=document.getElementById('a-rooms')?document.getElemen
 function useAI(){var ai=document.getElementById('ai-txt')?document.getElementById('ai-txt').textContent:'';var desc=document.getElementById('a-desc');var wrap=document.getElementById('ai-box-wrap');if(desc)desc.value=ai;if(wrap)wrap.style.display='none';}
 
 /* ════════════════════════════════════════════════════
-   📤 SUBMIT LISTING — С ОБМЕНОМ + SUPABASE
+   📤 SUBMIT LISTING — TIKTOK + EXCHANGE
 ═══════════════════════════════════════════════════ */
 function submitListing(){
   var priceEl=document.getElementById('a-price');
@@ -109,6 +119,7 @@ function submitListing(){
   var areaEl=document.getElementById('a-area');
   var cityEl=document.getElementById('a-city');
   var districtEl=document.getElementById('a-district');
+  var tiktokEl=document.getElementById('a-tiktok');
   
   if(!priceEl){alert('Ошибка: поле цены');return;}
   if(!descEl){alert('Ошибка: поле описания');return;}
@@ -121,9 +132,10 @@ function submitListing(){
   var area=areaEl?parseInt(areaEl.value):85;
   var city=cityEl?cityEl.value:'Астана';
   var district=districtEl?districtEl.value:'Есиль';
+  var tiktok=tiktokEl?tiktokEl.value.trim():'';
   
-  // ✅ Галочка "Обмен"
-  var isExchange = document.querySelector('input[name="deal_type"]:checked')?.value === 'exchange';
+  // ✅ "Рассмотрим обмен"
+  var considerExchange = document.getElementById('a-exchange')?.checked || false;
   
   if(!desc||desc.trim()===''){alert('Введите описание');return;}
   if(price<=0){alert('Введите цену');return;}
@@ -140,22 +152,24 @@ function submitListing(){
     district:district,
     price:price,
     desc:desc,
-    is_exchange: isExchange, // ✅ для локального отображения
+    tiktok:tiktok, // ✅ TikTok ссылка
+    consider_exchange: considerExchange, // ✅ "Рассмотрим обмен"
     realtor:curUser?curUser.name:'Гость',
     realtorFull:curUser?curUser.name:'Гость',
     agency:curUser?'Моё агентство':'-',
     phone:'+7 701 234 56 78',
     badge:'Новое',
     tags:[],
-    hasVideo:videosCopy.length>0,
+    hasVideo:videosCopy.length>0 || (tiktok && tiktok.length>0),
     liked:false,
     photos:photosCopy,
     videos:videosCopy,
     createdAt:new Date().toISOString()
   };
   
-  // Локально
+  // Локально + localStorage
   listings.unshift(newListing);
+  localStorage.setItem('fp_listings', JSON.stringify(listings)); // ✅ Сохраняем
   renderListings();
   
   // В Supabase
@@ -164,7 +178,8 @@ function submitListing(){
       price:price,
       description:desc,
       phone:newListing.phone,
-      is_exchange:isExchange,
+      consider_exchange:considerExchange,
+      tiktok_url:tiktok, // ✅ TikTok в базу
       city:city,
       district:district,
       rooms:rooms,
@@ -175,7 +190,7 @@ function submitListing(){
   }
   
   closeM('m-add');
-  priceEl.value='';descEl.value='';uploadedMedia={photos:[],videos:[]};
+  priceEl.value='';descEl.value='';if(tiktokEl)tiktokEl.value='';uploadedMedia={photos:[],videos:[]};
   toast('✅ Объект опубликован!');
   go('s-search');
 }
@@ -241,6 +256,11 @@ function callRealtor(phone){toast('📞 '+phone);}
 
 function viewPhoto(src){var win=window.open('','_blank');if(win){win.document.write('<!DOCTYPE html><html><head><title>Фото</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#000"><img src="'+src+'" style="max-width:100%;max-height:100vh" onclick="window.close()"></body></html>');}else{alert('Разрешите открытие новых окон');}}
 
+function openTikTok(url){
+  if(!url){alert('Видео не добавлено');return;}
+  window.open(url, '_blank');
+}
+
 function openDetail(id){
   var l=listings.find(function(x){return x.id===id;});
   if(!l){alert('Не найдено');return;}
@@ -259,6 +279,12 @@ function openDetail(id){
     photosHtml += '</div></div>';
   }
   
+  // TikTok карточка
+  var tiktokHtml = '';
+  if(l.tiktok){
+    tiktokHtml = '<div style="padding:0 17px 12px"><div style="background:linear-gradient(135deg,#000,#1a1a2e);border-radius:12px;padding:16px;text-align:center;cursor:pointer" onclick="openTikTok(\''+l.tiktok+'\')"><div style="font-size:32px;margin-bottom:8px">🎵</div><div style="color:#fff;font-weight:600;margin-bottom:4px">Видео-обзор на TikTok</div><div style="color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:12px">Переход в приложение</div><div style="display:inline-block;padding:8px 20px;background:#fe2c55;color:#fff;border-radius:8px;font-size:12px;font-weight:700">Открыть ↗</div></div></div>';
+  }
+  
   var videosHtml = '';
   if(videosArray.length > 0){
     videosHtml = '<div style="padding:0 17px 12px"><div style="font-size:12px;color:var(--t3);margin-bottom:8px;font-weight:600">Видео ('+videosArray.length+')</div>';
@@ -266,19 +292,20 @@ function openDetail(id){
     videosHtml += '</div>';
   }
   
-  modalBody.innerHTML='<div class="sh-handle"></div><div class="det-visual"><div class="det-em-bg">'+em+'</div></div><div class="det-price">'+fmtPrice(l.price)+' ₸</div><div style="padding:0 17px 12px"><div style="font-size:13px;color:var(--t3)">📍 '+l.city+', '+l.district+'</div><div style="font-size:16px;font-weight:700;margin:8px 0">'+l.rooms+'-комнатная · '+l.area+' м²</div></div><div style="padding:0 17px 16px;font-size:14px;line-height:1.7;color:var(--t2);white-space:pre-line">'+l.desc+'</div>'+photosHtml+videosHtml+'<div style="margin:0 17px 12px;padding:12px;background:var(--bg3);border-radius:12px"><div style="font-size:12px;color:var(--t3)">Риэлтор</div><div style="font-weight:600">'+l.realtorFull+'</div><div style="font-size:12px;color:var(--t3)">'+l.agency+'</div></div><div class="det-cta"><button class="det-btn det-call" onclick="callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button><button class="det-btn det-chat" onclick="closeM(\'m-det\');go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button></div>';
+  var exchangeBadge = l.consider_exchange ? '<div style="display:inline-block;padding:4px 10px;background:rgba(39,174,96,0.1);color:var(--green);border-radius:6px;font-size:11px;font-weight:600;margin-left:8px">🔄 Рассмотрим обмен</div>' : '';
+  
+  modalBody.innerHTML='<div class="sh-handle"></div><div class="det-visual"><div class="det-em-bg">'+em+'</div></div><div class="det-price">'+fmtPrice(l.price)+' ₸'+exchangeBadge+'</div><div style="padding:0 17px 12px"><div style="font-size:13px;color:var(--t3)">📍 '+l.city+', '+l.district+'</div><div style="font-size:16px;font-weight:700;margin:8px 0">'+l.rooms+'-комнатная · '+l.area+' м²</div></div><div style="padding:0 17px 16px;font-size:14px;line-height:1.7;color:var(--t2);white-space:pre-line">'+l.desc+'</div>'+photosHtml+tiktokHtml+videosHtml+'<div style="margin:0 17px 12px;padding:12px;background:var(--bg3);border-radius:12px"><div style="font-size:12px;color:var(--t3)">Риэлтор</div><div style="font-weight:600">'+l.realtorFull+'</div><div style="font-size:12px;color:var(--t3)">'+l.agency+'</div></div><div class="det-cta"><button class="det-btn det-call" onclick="callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button><button class="det-btn det-chat" onclick="closeM(\'m-det\');go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button></div>';
   openM('m-det');
 }
 
 /* ════════════════════════════════════════════════════
-   🎨 RENDER LISTINGS — С ФИЛЬТРОМ ОБМЕНА
+   🎨 RENDER LISTINGS
 ═══════════════════════════════════════════════════ */
 function renderListings(){
   var el=document.getElementById('list-body');if(!el)return;
   
-  // ✅ Фильтр по обмену
   var filtered = listTab === 'exch' 
-    ? listings.filter(function(l){return l.is_exchange;}) 
+    ? listings.filter(function(l){return l.consider_exchange;}) 
     : listings;
   
   if(filtered.length===0){el.innerHTML='<div class="empty"><div class="empty-ico">🏠</div><div class="empty-t">Нет объектов</div></div>';return;}
@@ -289,14 +316,18 @@ function renderListings(){
     var photosArray = Array.isArray(l.photos) ? l.photos : [];
     var firstPhoto = photosArray.length > 0 ? photosArray[0] : null;
     
+    var exchangeBadge = l.consider_exchange ? '<div style="position:absolute;top:10px;left:10px;padding:4px 10px;background:rgba(39,174,96,0.9);color:#fff;border-radius:6px;font-size:10px;font-weight:700;backdrop-filter:blur(4px)">🔄 Обмен</div>' : '';
+    
     var mediaHtml = '';
     if(firstPhoto){
-      mediaHtml = '<div class="lcard-media" style="background:none;padding:0;position:relative"><img src="'+firstPhoto+'" style="width:100%;height:185px;object-fit:cover;border-radius:12px 12px 0 0">'+(l.badge?'<div class="lcard-badge" style="background:var(--orange);position:absolute;top:10px;right:10px">'+l.badge+'</div>':'')+'</div>';
+      mediaHtml = '<div class="lcard-media" style="background:none;padding:0;position:relative"><img src="'+firstPhoto+'" style="width:100%;height:185px;object-fit:cover;border-radius:12px 12px 0 0">'+exchangeBadge+(l.badge?'<div class="lcard-badge" style="background:var(--orange);position:absolute;top:10px;right:10px">'+l.badge+'</div>':'')+'</div>';
     }else{
-      mediaHtml = '<div class="lcard-media"><div class="lcard-em">'+em+'</div>'+(l.badge?'<div class="lcard-badge" style="background:var(--orange)">'+l.badge+'</div>':'')+'</div>';
+      mediaHtml = '<div class="lcard-media"><div class="lcard-em">'+em+'</div>'+exchangeBadge+(l.badge?'<div class="lcard-badge" style="background:var(--orange)">'+l.badge+'</div>':'')+'</div>';
     }
     
-    return '<div class="lcard su" onclick="openDetail('+l.id+')">'+mediaHtml+'<div class="lcard-body"><div class="lcard-loc"><i class="fas fa-map-marker-alt"></i>'+l.city+', '+l.district+'</div><div class="lcard-price">'+fmtPrice(l.price)+' ₸</div><div class="lcard-sub">'+l.rooms+'-комнатная · '+l.area+' м²</div>'+(l.desc?'<div style="font-size:13px;color:var(--t2);line-height:1.5;margin:8px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+l.desc+'</div>':'')+'<div class="lcard-footer"><div class="lf-ava" style="background:var(--navy)">'+ini+'</div><div class="lf-name">'+esc(l.realtorFull)+' · '+esc(l.agency)+'</div></div><div class="lcard-cta"><button class="cta-btn cta-call" onclick="event.stopPropagation();callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button><button class="cta-btn cta-msg" onclick="event.stopPropagation();go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button></div></div></div>';
+    var tiktokIcon = l.tiktok ? '<span style="margin-left:6px;color:#fe2c55">🎵</span>' : '';
+    
+    return '<div class="lcard su" onclick="openDetail('+l.id+')">'+mediaHtml+'<div class="lcard-body"><div class="lcard-loc"><i class="fas fa-map-marker-alt"></i>'+l.city+', '+l.district+''+tiktokIcon+'</div><div class="lcard-price">'+fmtPrice(l.price)+' ₸</div><div class="lcard-sub">'+l.rooms+'-комнатная · '+l.area+' м²</div>'+(l.desc?'<div style="font-size:13px;color:var(--t2);line-height:1.5;margin:8px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+l.desc+'</div>':'')+'<div class="lcard-footer"><div class="lf-ava" style="background:var(--navy)">'+ini+'</div><div class="lf-name">'+esc(l.realtorFull)+' · '+esc(l.agency)+'</div></div><div class="lcard-cta"><button class="cta-btn cta-call" onclick="event.stopPropagation();callRealtor(\''+esc(l.phone)+'\')"><i class="fas fa-phone"></i> '+t('call')+'</button><button class="cta-btn cta-msg" onclick="event.stopPropagation();go(\'s-aira\')"><i class="fas fa-comment"></i> '+t('msg')+'</button></div></div></div>';
   }).join('');
 }
 
