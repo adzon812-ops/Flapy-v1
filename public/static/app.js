@@ -1,4 +1,3 @@
-Апп
 /* FLAPY app.js v16.0 — SUPABASE SYNC + ALL FEATURES v14.0 */
 'use strict';
 
