@@ -360,32 +360,39 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 
 <!-- MODALS -->
 
-<!-- AUTH MODAL -->
+<!-- AUTH MODAL — С ЛЮБОВЬЮ -->
 <div class="overlay" id="m-auth" onclick="closeOvl(event,'m-auth')">
   <div class="sheet">
     <div class="sh-handle"></div>
-    <div style="padding:0 17px 17px">
+    <div style="padding:0 17px 17px;text-align:center">
+      <div style="font-size:24px;font-weight:800;margin-bottom:8px;color:var(--t1)">🏡 Добро пожаловать домой</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:24px;font-style:italic">Здесь вас ждут с любовью 💙</div>
+      
       <div class="tab-switcher">
-        <div class="tsw on" id="at-in" onclick="authTab('in')">🔐 Вход</div>
-        <div class="tsw" id="at-up" onclick="authTab('up')">📝 Регистрация</div>
+        <div class="tsw on" id="at-in" onclick="authTab('in')">🔐 Войти</div>
+        <div class="tsw" id="at-up" onclick="authTab('up')">💝 Присоединиться</div>
       </div>
+      
       <div id="af-in">
         <label class="flabel">Email</label>
         <input class="finput" type="email" id="l-email" placeholder="your@email.com">
         <label class="flabel">Пароль</label>
         <input class="finput" type="password" id="l-pass" placeholder="••••••••">
-        <button class="btn-primary" onclick="doLogin()">Войти</button>
+        <button class="btn-primary" onclick="doLogin()" style="background:linear-gradient(135deg,#1E2D5A,#2E4A85)">🏠 Вернуться домой</button>
+        <div style="margin-top:16px;font-size:12px;color:var(--t2)">С возвращением, друг 💙</div>
       </div>
+      
       <div id="af-up" style="display:none">
-        <label class="flabel">ФИО *</label>
-        <input class="finput" type="text" id="r-name" placeholder="Иванов Иван">
-        <label class="flabel">Email *</label>
+        <label class="flabel">Ваше имя 💙</label>
+        <input class="finput" type="text" id="r-name" placeholder="Как к вам обращаться?">
+        <label class="flabel">Email</label>
         <input class="finput" type="email" id="r-email" placeholder="your@email.com">
-        <label class="flabel">Телефон</label>
+        <label class="flabel">Телефон (необязательно)</label>
         <input class="finput" type="tel" id="r-phone" placeholder="+7 777 123 45 67">
-        <label class="flabel">Пароль *</label>
-        <input class="finput" type="password" id="r-pass" placeholder="Минимум 6 символов">
-        <button class="btn-primary" onclick="doRegister()">Зарегистрироваться</button>
+        <label class="flabel">Пароль</label>
+        <input class="finput" type="password" id="r-pass" placeholder="Придумайте надёжный">
+        <button class="btn-primary" onclick="doRegister()" style="background:linear-gradient(135deg,#27AE60,#2ECC71)">💝 Стать частью семьи</button>
+        <div style="margin-top:16px;font-size:12px;color:var(--t2)">Мы рады вам! Регистрация займёт секунду 🌿</div>
       </div>
     </div>
   </div>
