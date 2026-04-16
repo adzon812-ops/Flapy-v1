@@ -426,23 +426,26 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <option>Есиль</option><option>Алматинский</option><option>Сарыарка</option><option>Байконыр</option><option>Нура</option><option>Бостандыкский</option>
       </select>
       <label class="flabel">Цена ₸</label>
-      <input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
-      
-      <!-- ✅ ГАЛОЧКА ОБМЕН/ПРОДАЖА -->
-      <div style="margin:12px 0">
-        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:8px">Тип сделки</label>
-        <div style="display:flex;gap:8px">
-          <label style="flex:1;padding:10px;background:var(--bg3);border-radius:10px;font-size:12px;cursor:pointer">
-            <input type="radio" name="deal_type" value="sale" checked style="margin-right:6px"> 💰 Продажа
-          </label>
-          <label style="flex:1;padding:10px;background:var(--bg3);border-radius:10px;font-size:12px;cursor:pointer">
-            <input type="radio" name="deal_type" value="exchange" style="margin-right:6px"> 🔄 Обмен
-          </label>
-        </div>
-      </div>
-      
-      <label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
-      <textarea class="finput" id="a-desc" placeholder="Опишите объект или нажмите AI..."></textarea>
+<input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
+
+<!-- ✅ TIKTOK WIN-WIN-WIN -->
+<label class="flabel">🎵 Ссылка на TikTok-видео <span style="color:var(--t3);font-weight:400">(необязательно)</span></label>
+<input class="finput" type="text" id="a-tiktok" placeholder="https://tiktok.com/@user/video/...">
+<div style="font-size:11px;color:var(--t3);margin:-8px 0 12px 4px">💡 Видео приведёт трафик с TikTok во Flapy</div>
+
+<!-- ✅ "РАССМОТРИМ ОБМЕН" -->
+<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:12px">
+  <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+    <input type="checkbox" id="a-exchange" style="width:18px;height:18px;accent-color:var(--green)">
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:13px;color:var(--t1)">🔄 Рассмотрим обмен</div>
+      <div style="font-size:11px;color:var(--t2)">Показывать во вкладке "Обмен"</div>
+    </div>
+  </label>
+</div>
+
+<label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
+<textarea class="finput" id="a-desc" placeholder="Опишите объект или нажмите AI..."></textarea>
       <div id="ai-box-wrap" style="display:none">
         <div class="ai-result" id="ai-txt"></div>
         <div class="ai-actions">
