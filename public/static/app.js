@@ -1,4 +1,4 @@
-/* FLAPY v18.0 — ФИНАЛЬНАЯ ВЕРСИЯ */
+/* FLAPY v18.0 — РАБОЧАЯ ВЕРСИЯ */
 'use strict';
 
 const SUPABASE_URL = 'https://qjmfudpqfyanigizwvze.supabase.co';
@@ -22,6 +22,9 @@ const WARM_WORDS = {
   gentle: 'Не спешите. Изучайте. Мы рядом 💙'
 };
 
+/* ════════════════════════════════════════════════════
+   🔐 ADMIN — Ctrl+Shift+A
+═══════════════════════════════════════════════════ */
 document.addEventListener('keydown', function(e){
   if(e.ctrlKey && e.shiftKey && e.key === 'A'){
     e.preventDefault();
@@ -52,7 +55,7 @@ function showAdminPanel(listingsCount,realtorsCount){
   if(existing)existing.remove();
   const panel=document.createElement('div');
   panel.id='admin-panel';
-  panel.style.cssText='position:fixed;top:70px;right:10px;background:linear-gradient(135deg,#9B59B6,#8E44AD);color:white;padding:16px;border-radius:12px;z-index:1000;min-width:250px;';
+  panel.style.cssText='position:fixed;top:70px;right:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:16px;border-radius:12px;z-index:1000;min-width:250px;';
   panel.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">👑 Панель<button onclick="closeAdminPanel()" style="margin-left:auto;background:none;border:none;color:white;cursor:pointer;font-size:18px">×</button></div><div style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;margin-bottom:12px"><div style="font-size:13px;margin-bottom:6px">📊 Объектов: <b>'+listingsCount+'</b></div><div style="font-size:13px">👤 Риэлторов: <b>'+realtorsCount+'</b></div></div><button onclick="adminViewRealtors()" style="width:100%;padding:10px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:6px">👥 Риэлторы</button><button onclick="adminDeleteAll()" style="width:100%;padding:10px;background:rgba(231,76,60,0.9);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">⚠️ Удалить всё</button>';
   document.body.appendChild(panel);
 }
@@ -61,6 +64,9 @@ function closeAdminPanel(){const p=document.getElementById('admin-panel');if(p)p
 async function adminViewRealtors(){const{data,error}=await db.from('realtors').select('*');if(error){alert(error.message);return;}let r='👥 РИЭЛТОРЫ:\n\n';data.forEach((x,i)=>{r+=(i+1)+'. '+(x.name||'Без имени')+'\n   '+x.email+'\n\n';});alert(r);}
 async function adminDeleteAll(){if(!confirm('Удалить все объекты?'))return;const{error}=await db.from('listings').delete().neq('id','00000000-0000-0000-0000-000000000000');if(error){alert(error.message);}else{alert('Удалено');location.reload();}}
 
+/* ════════════════════════════════════════════════════
+   🚀 INIT
+═══════════════════════════════════════════════════ */
 window.addEventListener('load',async function(){
   if(localStorage.getItem('fp_admin_session')==='true'){
     curUser={id:'admin-001',email:'admin@flapy.internal',role:'superadmin',user_metadata:{full_name:'Администратор'}};
@@ -81,7 +87,7 @@ window.addEventListener('load',async function(){
 async function loadListings(){
   if(!db)return;
   const{data,error}=await db.from('listings').select('*').order('created_at',{ascending:false});
-  if(error)return;
+  if(error){console.error('Load error:',error);return;}
   listings=(data||[]).map(i=>({...i,desc:i.description,phone:i.phone}));
   renderListings();
 }
@@ -96,7 +102,7 @@ async function applyWatermark(file){
         const ctx=canvas.getContext('2d');
         canvas.width=img.width;canvas.height=img.height;
         ctx.drawImage(img,0,0);
-        ctx.globalAlpha=0.25;ctx.fillStyle='#1E2D5A';ctx.font='bold 36px Arial';ctx.textAlign='center';
+        ctx.globalAlpha=0.25;ctx.fillStyle='#667eea';ctx.font='bold 36px Arial';ctx.textAlign='center';
         ctx.fillText('FLAPY',canvas.width/2,canvas.height/2);
         resolve(canvas.toDataURL('image/jpeg',0.85));
       };
@@ -111,14 +117,14 @@ async function submitListing(){
   
   const priceEl=document.getElementById('a-price'),descEl=document.getElementById('a-desc'),typeEl=document.getElementById('a-type'),roomsEl=document.getElementById('a-rooms'),areaEl=document.getElementById('a-area'),cityEl=document.getElementById('a-city'),districtEl=document.getElementById('a-district'),tiktokEl=document.getElementById('a-tiktok'),exchangeCheck=document.getElementById('a-exchange');
   
-  if(!priceEl||!descEl)return;
+  if(!priceEl||!descEl){showWarmToast('Заполните поля');return;}
   
   const price=parseInt(priceEl.value.replace(/\s/g,''))||0,desc=descEl.value||'',type=typeEl?typeEl.value:'apartment',rooms=roomsEl?parseInt(roomsEl.value):3,area=areaEl?parseInt(areaEl.value):85,city=cityEl?cityEl.value:'Астана',district=districtEl?districtEl.value:'Есиль',tiktok=tiktokEl?tiktokEl.value.trim():'',considerExchange=exchangeCheck?exchangeCheck.checked:false;
   
-  if(!desc||desc.trim()===''){showWarmToast('Расскажите о доме с душой');return;}
+  if(!desc||desc.trim()===''){showWarmToast('Расскажите о доме');return;}
   if(price<=0){showWarmToast('Укажите цену');return;}
   
-  showWarmToast('⏳ Создаю с любовью...');
+  showWarmToast('⏳ Создаю...');
   
   let watermarkedPhotos=[];
   for(let i=0;i<uploadedMedia.photos.length;i++){watermarkedPhotos.push(await applyWatermark(uploadedMedia.photos[i]));}
@@ -127,7 +133,7 @@ async function submitListing(){
   
   if(error){showWarmToast('❌ '+error.message);return;}
   
-  showWarmToast('✅ Объект создан!');
+  showWarmToast('✅ Создано!');
   closeM('m-add');uploadedMedia={photos:[]};await loadListings();go('s-search');
 }
 
@@ -135,7 +141,7 @@ function contactRealtor(id,type){
   const l=listings.find(x=>x.id===id);
   if(!l)return;
   const phone=(l.phone||'').replace(/\D/g,'');
-  if(!phone){showWarmToast('Номер не указан');return;}
+  if(!phone){showWarmToast('Нет номера');return;}
   
   if(type==='whatsapp'){
     const text=encodeURIComponent('Здравствуйте! 💙\nИнтересует ваше объявление:\n'+l.rooms+'-комн., '+l.area+' м²\n'+fmtPrice(l.price)+' ₸');
@@ -175,7 +181,7 @@ function renderListings(){
         '<div style="font-size:13px;line-height:1.6;color:var(--t1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:14px;opacity:0.9">'+(l.desc||'')+'</div>'+
         '<div style="display:flex;gap:10px">'+
           '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'call\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#27AE60,#2ECC71);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(39,174,96,0.3)">📞 '+WARM_WORDS.call+'</button>'+
-          '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'whatsapp\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#1E2D5A,#2E4A85);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(30,45,90,0.3)">💬 '+WARM_WORDS.whatsapp+'</button>'+
+          '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'whatsapp\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(102,126,234,0.3)">💬 '+WARM_WORDS.whatsapp+'</button>'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -187,7 +193,7 @@ async function updateAuthUI(){
   
   if(curUser){
     const email=curUser.email||'',name=(curUser.user_metadata&&curUser.user_metadata.full_name)?curUser.user_metadata.full_name:email.split('@')[0];
-    if(email.includes('admin')||curUser.role==='superadmin'){btn.innerHTML='👑';btn.style.background='#9B59B6';btn.onclick=showAdminPanelFromBtn;}
+    if(email.includes('admin')||curUser.role==='superadmin'){btn.innerHTML='👑';btn.style.background='linear-gradient(135deg,#667eea,#764ba2)';btn.onclick=showAdminPanelFromBtn;}
     else{btn.innerHTML='👤 '+name.split(' ')[0];btn.style.background='var(--navy)';btn.onclick=()=>go('s-prof');}
   }else{btn.innerHTML=WARM_WORDS.login;btn.style.background='var(--navy)';btn.onclick=()=>openM('m-auth');}
 }
@@ -211,7 +217,7 @@ async function doLogin(){
   }
   
   curUser=data.user;localStorage.removeItem('fp_admin_session');await updateAuthUI();closeM('m-auth');
-  showWarmToast('👋 С возвращением, '+(curUser.user_metadata?.full_name?.split(' ')[0]||'друг')+'! 💙');
+  showWarmToast('👋 С возвращением! 💙');
   location.reload();
 }
 
@@ -228,19 +234,19 @@ async function doRegister(){
     email:email,
     password:pass,
     options:{
-      data:{full_name:name,phone:phone}
+       {full_name:name,phone:phone}
     }
   });
   
   if(error){
-    if(error.message.includes('429')){showWarmToast('⏳ Много попыток. Подождите или используйте другой email');}
+    if(error.message.includes('429')){showWarmToast('⏳ Подождите или используйте другой email');}
     else{showWarmToast('❌ '+error.message);}
     return;
   }
   
   if(data.user){await db.from('realtors').insert([{id:data.user.id,email,name,phone,whatsapp:phone,agency:'Не указано'}]);}
   
-  showWarmToast('✅ Проверьте email для подтверждения! 💙');
+  showWarmToast('✅ Проверьте email! 💙');
   authTab('in');
 }
 
@@ -257,7 +263,7 @@ function sendAira(){const inp=document.getElementById('aira-inp'),txt=inp?inp.va
 
 function showWarmToast(msg){
   let el=document.getElementById('toast');
-  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1E2D5A,#2E4A85);color:#fff;padding:14px 28px;border-radius:14px;z-index:10000;opacity:0;transition:all 0.3s;font-weight:600;box-shadow:0 8px 30px rgba(30,45,90,0.3);font-size:14px;';document.body.appendChild(el);}
+  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 28px;border-radius:14px;z-index:10000;opacity:0;transition:all 0.3s;font-weight:600;box-shadow:0 8px 30px rgba(102,126,234,0.4);font-size:14px;';document.body.appendChild(el);}
   el.textContent=msg;el.style.opacity='1';
   setTimeout(()=>{el.style.opacity='0';},3500);
 }
@@ -297,3 +303,11 @@ function openDetail(id){
 }
 
 function go(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));const el=document.getElementById(id);if(el)el.classList.add('on');if(id==='s-search')renderListings();if(id==='s-aira')renderAiraChat();}
+
+/* ════════════════════════════════════════════════════
+   ✅ ФУНКЦИЯ nav() — ИСПРАВЛЕНИЕ ОШИБКИ
+═══════════════════════════════════════════════════ */
+function nav(el){
+  document.querySelectorAll('.nav-it').forEach(n=>n.classList.remove('on'));
+  if(el)el.classList.add('on');
+}
