@@ -138,11 +138,11 @@ window.addEventListener('load', async function(){
   // Проверяем админ-сессию
   if(localStorage.getItem('fp_admin_session') === 'true'){
     curUser = {
-      id: 'admin-001',
-      email: 'admin@flapy.internal',
-      role: 'superadmin',
-      user_metadata: { full_name: 'Администратор' }
-    };
+  id: 'admin-001',
+  email: 'admin@flapy.internal',
+  role: 'superadmin',
+  user_metadata: { full_name: 'Администратор' }  // ✅ Добавил двоеточие
+};
     await updateAuthUI();
   }else{
     // Обычная проверка сессии
@@ -442,9 +442,9 @@ async function doRegister(){
     email: email,
     password: pass,
     options: {
-       { full_name: name, phone: phone }
-    }
-  });
+      options: {
+  data: { full_name: name, phone: phone }  // ✅ Добавил "data:"
+}
   
   if(error){alert('❌ Ошибка: ' + error.message);return;}
   
