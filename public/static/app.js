@@ -438,13 +438,14 @@ async function doRegister(){
   
   if(!name || !email || !pass){alert('Заполните все поля');return;}
   
+  // ✅ ИСПРАВЛЕНО: правильная структура options
   const { data, error } = await db.auth.signUp({
     email: email,
     password: pass,
     options: {
-      options: {
-  data: { full_name: name, phone: phone }  // ✅ Добавил "data:"
-}
+      data: { full_name: name, phone: phone }
+    }
+  });
   
   if(error){alert('❌ Ошибка: ' + error.message);return;}
   
@@ -462,7 +463,6 @@ async function doRegister(){
   alert('✅ Регистрация успешна! Теперь войдите.');
   authTab('in');
 }
-
 async function doLogout(){
   await db.auth.signOut();
   curUser = null;
