@@ -26,7 +26,7 @@ return `<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--white:#FFFFFF;--bg:#F5F5F7;--bg2:#FFFFFF;--bg3:#F0F0F5;--navy:#1E2D5A;--navy2:#2E4A85;--orange:#F47B20;--orange2:#FF9A3C;--green:#27AE60;--red:#E74C3C;--purple:#9B59B6;--t1:#1A1A2E;--t2:#6B7280;--t3:#9CA3AF;--brd:#E5E7EB;--brd2:#D1D5DB;--sh:0 1px 4px rgba(0,0,0,.06),0 2px 10px rgba(0,0,0,.05);--sh2:0 4px 20px rgba(0,0,0,.1);--nav-h:56px;--bot-h:64px;--r:14px;--max:480px}
-[data-theme=dark]{--bg:#0F0F1A;--bg2:#161626;--bg3:#1E1E35;--t1:#F0F0FF;--t2:#9090C0;--t3:#5A5A80;--brd:rgba(255,255,255,.1);--brd2:rgba(255,255,255,.15)}
+[data-theme=dark]{--bg:#1a1a2e;--bg2:#252540;--bg3:#2d2d4a;--t1:#e8e8f0;--t2:#b8b8d0;--t3:#8888a0;--brd:rgba(255,255,255,0.08);--navy:#3d5a8a;--orange:#e89858}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);font-family:'Inter',-apple-system,sans-serif;color:var(--t1);overflow:hidden;-webkit-font-smoothing:antialiased}
 button{border:none;cursor:pointer;font-family:inherit;background:none;color:inherit}
@@ -224,7 +224,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .ai-act-btn{padding:5px 11px;border-radius:8px;font-size:11px;font-weight:600;background:var(--bg3);border:1px solid var(--brd);color:var(--t2);cursor:pointer;transition:all .15s}
 .ai-act-btn:active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .det-visual{height:200px;position:relative;overflow:hidden;background:linear-gradient(135deg,#EEF0F6,#E0E3EE)}
-[data-theme=dark].det-visual{background:linear-gradient(135deg,#1E1E35,#161626)}
+[data-theme=dark]{--bg:#1a1a2e;--bg2:#252540;--bg3:#2d2d4a;--t1:#e8e8f0;--t2:#b8b8d0;--t3:#8888a0;--brd:rgba(255,255,255,0.08);--navy:#3d5a8a;--orange:#e89858}
 .det-visual iframe{width:100%;height:100%;border:none}
 .det-em-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;opacity:.25}
 .det-price{font-size:23px;font-weight:900;color:var(--t1);padding:8px 17px 4px}
@@ -234,7 +234,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .det-btn:active{opacity:.85}
 .det-call{background:var(--green)}
 .det-chat{background:var(--navy)}
-[data-theme=dark].det-chat{background:var(--orange)}
+[data-theme=dark]{--bg:#1a1a2e;--bg2:#252540;--bg3:#2d2d4a;--t1:#e8e8f0;--t2:#b8b8d0;--t3:#8888a0;--brd:rgba(255,255,255,0.08);--navy:#3d5a8a;--orange:#e89858}
 .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 17px 17px}
 .more-item{background:var(--bg2);border:1px solid var(--brd);border-radius:14px;padding:16px;cursor:pointer;text-align:center;box-shadow:var(--sh);transition:box-shadow .15s}
 .more-item:active{box-shadow:var(--sh2)}
@@ -417,7 +417,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       </select>
       <label class="flabel">Район</label>
       <select class="finput" id="a-district">
-        <option>Есиль</option><option>Алматинский</option><option>Сарыарка</option><option>Байконыр</option><option>Нура</option><option>Бостандыкский</option>
+        <option>Есиль</option><option>Алматинский</option><option>Сарыарка</option><option>Байконыр</option><option>Нура</option><option>
       </select>
       <label class="flabel">Цена ₸</label>
 <input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
