@@ -360,41 +360,32 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 
 <!-- MODALS -->
 
-<!-- AUTH -->
+<!-- AUTH MODAL -->
 <div class="overlay" id="m-auth" onclick="closeOvl(event,'m-auth')">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div style="padding:0 17px 17px">
       <div class="tab-switcher">
-        <div class="tsw on" id="at-in" onclick="authTab('in')" data-ru="Войти" data-kz="Кіру">Войти</div>
-        <div class="tsw" id="at-up" onclick="authTab('up')" data-ru="Регистрация" data-kz="Тіркелу">Регистрация</div>
+        <div class="tsw on" id="at-in" onclick="authTab('in')">🔐 Вход</div>
+        <div class="tsw" id="at-up" onclick="authTab('up')">📝 Регистрация</div>
       </div>
       <div id="af-in">
-        <div class="info-box warn"><span>💡</span><span id="tx-test-hint">Тест: <b>test@realtor.kz</b> / <b>demo123</b></span></div>
-        <label class="flabel" id="tx-email-lbl">Email</label>
-        <input class="finput" type="email" id="l-email" placeholder="you@mail.com" autocomplete="email">
-        <label class="flabel" id="tx-pass-lbl">Пароль</label>
-        <input class="finput" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
-        <button class="btn-primary" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> <span id="tx-signin-btn">Войти</span></button>
-        <button class="btn-secondary" onclick="authTab('up')" id="tx-no-acc">Нет аккаунта? Зарегистрироваться</button>
+        <label class="flabel">Email</label>
+        <input class="finput" type="email" id="l-email" placeholder="your@email.com">
+        <label class="flabel">Пароль</label>
+        <input class="finput" type="password" id="l-pass" placeholder="••••••••">
+        <button class="btn-primary" onclick="doLogin()">Войти</button>
       </div>
       <div id="af-up" style="display:none">
-        <div class="info-box"><span>🏠</span><span id="tx-reg-hint">Только для риэлторов — верифицированный статус сразу</span></div>
-        <label class="flabel">ФИО</label>
-        <input class="finput" type="text" id="r-name" placeholder="Айгерим Касымова">
-        <label class="flabel">Email</label>
-        <input class="finput" type="email" id="r-email" placeholder="you@mail.com">
+        <label class="flabel">ФИО *</label>
+        <input class="finput" type="text" id="r-name" placeholder="Иванов Иван">
+        <label class="flabel">Email *</label>
+        <input class="finput" type="email" id="r-email" placeholder="your@email.com">
         <label class="flabel">Телефон</label>
-        <input class="finput" type="tel" id="r-phone" placeholder="+7 777 000 00 00">
-        <label class="flabel">Агентство</label>
-        <select class="finput" id="r-agency">
-          <option value="">Выбрать...</option>
-          <option>Самозанятый риэлтор</option><option>Century 21</option><option>Etagi</option><option>Royal Group</option><option>Другое</option>
-        </select>
-        <label class="flabel">Пароль</label>
-        <input class="finput" type="password" id="r-pass" placeholder="Минимум 6 символов" autocomplete="new-password">
-        <button class="btn-primary" onclick="doReg()"><i class="fas fa-user-plus"></i> <span id="tx-reg-btn">Зарегистрироваться</span></button>
-        <button class="btn-secondary" onclick="authTab('in')" id="tx-have-acc">Уже есть аккаунт</button>
+        <input class="finput" type="tel" id="r-phone" placeholder="+7 777 123 45 67">
+        <label class="flabel">Пароль *</label>
+        <input class="finput" type="password" id="r-pass" placeholder="Минимум 6 символов">
+        <button class="btn-primary" onclick="doRegister()">Зарегистрироваться</button>
       </div>
     </div>
   </div>
