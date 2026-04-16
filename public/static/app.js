@@ -1,4 +1,4 @@
-/* FLAPY v18.0 — С ЛЮБОВЬЮ И ЗАБОТОЙ 💙 */
+/* FLAPY v18.0 — С ЛЮБОВЬЮ И ЗАЩИТОЙ 💙 */
 'use strict';
 
 const SUPABASE_URL = 'https://qjmfudpqfyanigizwvze.supabase.co';
@@ -9,26 +9,17 @@ var listings = [], curUser = null, curLang = 'ru', listTab = 'obj',
 notifications = [], airaMessages = [], uploadedMedia = {photos:[]},
 favorites = JSON.parse(localStorage.getItem('fp_favs') || '[]');
 
-/* ════════════════════════════════════════════════════
-   💙 ТЁПЛЫЕ СЛОВА С ДУШОЙ
-═══════════════════════════════════════════════════ */
 const WARM_WORDS = {
   welcome: 'Добро пожаловать домой 🏡',
-  subtitle: 'Здесь вы найдёте место, где будет звучать ваш смех',
-  explore: 'Исследуйте с любовью',
-  login: 'Вернуться домой',
-  register: 'Присоединиться к семье',
-  logout: 'До скорой встречи',
-  profile: 'Ваш уголок',
-  aira: 'Чат друзей',
-  objects: 'Дома мечты',
-  exchange: 'Обмен с заботой',
-  call: 'Позвонить с душой',
-  whatsapp: 'Написать тепло',
-  fav: 'Сохранить в сердце',
-  noObjects: 'Пока здесь тихо... Но мы уже готовим что-то особенное для вас 🌿',
-  beFirst: 'Будьте первым, кто создаст историю этого места',
-  gentle: 'Не спешите. Изучайте. Чувствуйте. Мы рядом 💙'
+  subtitle: 'Здесь вас ждут с любовью 💙',
+  login: 'Войти',
+  register: 'Присоединиться',
+  logout: 'До встречи',
+  call: 'Позвонить',
+  whatsapp: 'Написать',
+  noObjects: 'Пока здесь тихо... Но мы уже готовим что-то особенное 🌿',
+  beFirst: 'Будьте первым, кто создаст историю',
+  gentle: 'Не спешите. Изучайте. Мы рядом 💙'
 };
 
 /* ════════════════════════════════════════════════════
@@ -46,12 +37,10 @@ async function activateAdminMode(){
   if(password === 'FlapySuperAdmin2026'){
     curUser = {id:'admin-001',email:'admin@flapy.internal',role:'superadmin',user_metadata:{full_name:'Администратор'}};
     localStorage.setItem('fp_admin_session','true');
-    alert('💙 Админ-режим активирован. Ты дома.');
+    alert('💙 Админ-режим активирован');
     await updateAuthUI();
     await loadAdminStats();
-  }else{
-    alert('Неверный ключ доступа');
-  }
+  }else{alert('Неверный ключ');}
 }
 
 async function loadAdminStats(){
@@ -66,7 +55,7 @@ function showAdminPanel(listingsCount,realtorsCount){
   if(existing)existing.remove();
   const panel=document.createElement('div');
   panel.id='admin-panel';
-  panel.style.cssText='position:fixed;top:70px;right:10px;background:linear-gradient(135deg,#9B59B6,#8E44AD);color:white;padding:16px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.3);z-index:1000;min-width:280px;';
+  panel.style.cssText='position:fixed;top:70px;right:10px;background:linear-gradient(135deg,#9B59B6,#8E44AD);color:white;padding:16px;border-radius:12px;z-index:1000;min-width:250px;';
   panel.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">👑 Панель<button onclick="closeAdminPanel()" style="margin-left:auto;background:none;border:none;color:white;cursor:pointer;font-size:18px">×</button></div><div style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;margin-bottom:12px"><div style="font-size:13px;margin-bottom:6px">📊 Объектов: <b>'+listingsCount+'</b></div><div style="font-size:13px">👤 Риэлторов: <b>'+realtorsCount+'</b></div></div><button onclick="adminViewRealtors()" style="width:100%;padding:10px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:6px">👥 Риэлторы</button><button onclick="adminDeleteAll()" style="width:100%;padding:10px;background:rgba(231,76,60,0.9);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">⚠️ Удалить всё</button>';
   document.body.appendChild(panel);
 }
@@ -76,21 +65,19 @@ async function adminViewRealtors(){const{data,error}=await db.from('realtors').s
 async function adminDeleteAll(){if(!confirm('Удалить все объекты?'))return;const{error}=await db.from('listings').delete().neq('id','00000000-0000-0000-0000-000000000000');if(error){alert(error.message);}else{alert('Удалено');location.reload();}}
 
 /* ════════════════════════════════════════════════════
-   🚀 INIT — С ЛЮБОВЬЮ
+   🚀 INIT
 ═══════════════════════════════════════════════════ */
 window.addEventListener('load',async function(){
   if(localStorage.getItem('fp_admin_session')==='true'){
     curUser={id:'admin-001',email:'admin@flapy.internal',role:'superadmin',user_metadata:{full_name:'Администратор'}};
     await updateAuthUI();
   }else{
-    const{data:{session}}=await db.auth.getSession();
+    const{{session}}=await db.auth.getSession();
     if(session){curUser=session.user;await updateAuthUI();}
   }
   
   var ld=document.getElementById('loader');
-  if(ld){
-    setTimeout(()=>{ld.style.opacity='0';setTimeout(()=>ld.style.display='none',300);},1500);
-  }
+  if(ld){setTimeout(()=>{ld.style.opacity='0';setTimeout(()=>ld.style.display='none',300);},1500);}
   
   await loadListings();
   renderAiraChat();
@@ -126,7 +113,7 @@ async function applyWatermark(file){
 }
 
 async function submitListing(){
-  if(!curUser){showWarmToast('💙 Сначала войдите, чтобы творить');openM('m-auth');return;}
+  if(!curUser){showWarmToast('💙 Сначала войдите');openM('m-auth');return;}
   
   const priceEl=document.getElementById('a-price'),descEl=document.getElementById('a-desc'),typeEl=document.getElementById('a-type'),roomsEl=document.getElementById('a-rooms'),areaEl=document.getElementById('a-area'),cityEl=document.getElementById('a-city'),districtEl=document.getElementById('a-district'),tiktokEl=document.getElementById('a-tiktok'),exchangeCheck=document.getElementById('a-exchange');
   
@@ -134,8 +121,8 @@ async function submitListing(){
   
   const price=parseInt(priceEl.value.replace(/\s/g,''))||0,desc=descEl.value||'',type=typeEl?typeEl.value:'apartment',rooms=roomsEl?parseInt(roomsEl.value):3,area=areaEl?parseInt(areaEl.value):85,city=cityEl?cityEl.value:'Астана',district=districtEl?districtEl.value:'Есиль',tiktok=tiktokEl?tiktokEl.value.trim():'',considerExchange=exchangeCheck?exchangeCheck.checked:false;
   
-  if(!desc||desc.trim()===''){showWarmToast('Расскажите о доме с душой...');return;}
-  if(price<=0){showWarmToast('Укажите цену мечты');return;}
+  if(!desc||desc.trim()===''){showWarmToast('Расскажите о доме с душой');return;}
+  if(price<=0){showWarmToast('Укажите цену');return;}
   
   showWarmToast('⏳ Создаю с любовью...');
   
@@ -157,11 +144,9 @@ function contactRealtor(id,type){
   if(!phone){showWarmToast('Номер не указан');return;}
   
   if(type==='whatsapp'){
-    const text=encodeURIComponent('Здравствуйте! 💙\nИнтересует ваше объявление на Flapy:\n'+l.rooms+'-комн., '+l.area+' м²\n'+fmtPrice(l.price)+' ₸\n'+(l.tiktok_url?'\n🎵 '+l.tiktok_url:''));
+    const text=encodeURIComponent('Здравствуйте! 💙\nИнтересует ваше объявление на Flapy:\n'+l.rooms+'-комн., '+l.area+' м²\n'+fmtPrice(l.price)+' ₸');
     window.open('https://wa.me/'+phone+'?text='+text,'_blank');
-  }else{
-    window.location.href='tel:'+phone;
-  }
+  }else{window.location.href='tel:'+phone;}
 }
 
 function toggleFavorite(id){
@@ -184,7 +169,7 @@ function renderListings(){
   el.innerHTML=filtered.map(l=>{
     const isFav=favorites.includes(l.id),exchangeBadge=l.consider_exchange?'<div style="position:absolute;top:10px;left:10px;padding:4px 10px;background:rgba(39,174,96,0.9);color:#fff;border-radius:6px;font-size:10px;font-weight:700">🔄 Обмен</div>':'',tiktokIcon=l.tiktok_url?'<span style="margin-left:6px;color:#fe2c55">🎵</span>':'',photo=l.photo_urls&&l.photo_urls[0]?l.photo_urls[0]:null;
     
-    return '<div class="lcard su" style="position:relative;cursor:pointer;margin-bottom:20px;background:var(--bg2);border-radius:16px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.08);transition:all 0.3s ease" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 4px 15px rgba(0,0,0,0.08)\'" onclick="openDetail(\''+l.id+'\')">'+
+    return '<div class="lcard su" style="position:relative;cursor:pointer;margin-bottom:20px;background:var(--bg2);border-radius:16px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.08);transition:all 0.3s" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 4px 15px rgba(0,0,0,0.08)\'" onclick="openDetail(\''+l.id+'\')">'+
       '<div style="position:relative;height:220px;background:linear-gradient(135deg,#f0f0f5,#e0e0e8);overflow:hidden">'+
         (photo?'<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover" loading="lazy">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:64px;color:#ccc;opacity:0.5">🏢</div>')+
         exchangeBadge+
@@ -195,8 +180,8 @@ function renderListings(){
         '<div style="font-size:14px;color:var(--t2);margin-bottom:10px">'+(l.city||'Астана')+', '+(l.district||'')+' · '+(l.rooms||3)+'-комн. · '+(l.area||85)+' м²</div>'+
         '<div style="font-size:13px;line-height:1.6;color:var(--t1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:14px;opacity:0.9">'+(l.desc||'')+'</div>'+
         '<div style="display:flex;gap:10px">'+
-          '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'call\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#27AE60,#2ECC71);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(39,174,96,0.3);transition:all 0.2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 5px 15px rgba(39,174,96,0.4)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 3px 10px rgba(39,174,96,0.3)\'">📞 '+WARM_WORDS.call+'</button>'+
-          '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'whatsapp\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#1E2D5A,#2E4A85);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(30,45,90,0.3);transition:all 0.2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 5px 15px rgba(30,45,90,0.4)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'0 3px 10px rgba(30,45,90,0.3)\'">💬 '+WARM_WORDS.whatsapp+'</button>'+
+          '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'call\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#27AE60,#2ECC71);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(39,174,96,0.3)">📞 '+WARM_WORDS.call+'</button>'+
+          '<button onclick="event.stopPropagation();contactRealtor(\''+l.id+'\',\'whatsapp\')" style="flex:1;padding:11px;background:linear-gradient(135deg,#1E2D5A,#2E4A85);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:0 3px 10px rgba(30,45,90,0.3)">💬 '+WARM_WORDS.whatsapp+'</button>'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -208,14 +193,9 @@ async function updateAuthUI(){
   
   if(curUser){
     const email=curUser.email||'',name=(curUser.user_metadata&&curUser.user_metadata.full_name)?curUser.user_metadata.full_name:email.split('@')[0];
-    if(email.includes('admin')||curUser.role==='superadmin'){
-      btn.innerHTML='👑';btn.style.background='#9B59B6';btn.onclick=showAdminPanelFromBtn;
-    }else{
-      btn.innerHTML='👤 '+name.split(' ')[0];btn.style.background='var(--navy)';btn.onclick=()=>go('s-prof');
-    }
-  }else{
-    btn.innerHTML=WARM_WORDS.login;btn.style.background='var(--navy)';btn.onclick=()=>openM('m-auth');
-  }
+    if(email.includes('admin')||curUser.role==='superadmin'){btn.innerHTML='👑';btn.style.background='#9B59B6';btn.onclick=showAdminPanelFromBtn;}
+    else{btn.innerHTML='👤 '+name.split(' ')[0];btn.style.background='var(--navy)';btn.onclick=()=>go('s-prof');}
+  }else{btn.innerHTML=WARM_WORDS.login;btn.style.background='var(--navy)';btn.onclick=()=>openM('m-auth');}
 }
 
 function showAdminPanelFromBtn(){loadAdminStats();}
@@ -227,13 +207,17 @@ async function doLogin(){
   const email=emailEl.value.trim(),pass=passEl.value;
   if(!email||!pass){showWarmToast('Введите email и пароль');return;}
   
-  showWarmToast('⏳ Возвращаемся домой...');
+  showWarmToast('⏳ Вход...');
   
   const{data,error}=await db.auth.signInWithPassword({email,password:pass});
-  if(error){showWarmToast('❌ '+error.message);return;}
+  if(error){
+    if(error.message.includes('Email')){showWarmToast('❌ Подтвердите email (проверьте почту)');}
+    else{showWarmToast('❌ '+error.message);}
+    return;
+  }
   
   curUser=data.user;localStorage.removeItem('fp_admin_session');await updateAuthUI();closeM('m-auth');
-  showWarmToast('👋 С возвращением домой, '+(curUser.user_metadata?.full_name?.split(' ')[0]||'друг')+'! 💙');
+  showWarmToast('👋 С возвращением, '+(curUser.user_metadata?.full_name?.split(' ')[0]||'друг')+'! 💙');
   location.reload();
 }
 
@@ -242,27 +226,36 @@ async function doRegister(){
   if(!nameEl||!emailEl||!passEl)return;
   
   const name=nameEl.value.trim(),email=emailEl.value.trim(),phone=phoneEl?phoneEl.value.trim():'',pass=passEl.value;
-  if(!name||!email||!pass){showWarmToast('Заполните все поля с любовью');return;}
+  if(!name||!email||!pass){showWarmToast('Заполните все поля');return;}
   
-  showWarmToast('⏳ Создаём ваш уголок...');
+  showWarmToast('⏳ Регистрация...');
   
-  const{data,error}=await db.auth.signUp({email,password:pass,options:{data:{full_name:name,phone:phone}}});
-  if(error){showWarmToast('❌ '+error.message);return;}
+  const{data,error}=await db.auth.signUp({
+    email:email,
+    password:pass,
+    options:{
+      {full_name:name,phone:phone}
+    }
+  });
+  
+  if(error){
+    if(error.message.includes('429')){showWarmToast('⏳ Много попыток. Подождите или используйте другой email');}
+    else{showWarmToast('❌ '+error.message);}
+    return;
+  }
   
   if(data.user){await db.from('realtors').insert([{id:data.user.id,email,name,phone,whatsapp:phone,agency:'Не указано'}]);}
   
-  showWarmToast('🎉 Добро пожаловать в семью Flapy! 💙');
+  showWarmToast('✅ Проверьте email для подтверждения! 💙');
   authTab('in');
-  // Авто-вход после регистрации
-  setTimeout(async()=>{await db.auth.signInWithPassword({email,password:pass});location.reload();},1500);
 }
 
 async function doLogout(){await db.auth.signOut();curUser=null;localStorage.removeItem('fp_admin_session');await updateAuthUI();showWarmToast(WARM_WORDS.logout+' 💙');location.reload();}
 
 function renderAiraChat(){
   const el=document.getElementById('aira-msgs');if(!el)return;
-  if(airaMessages.length===0){el.innerHTML='<div style="padding:60px 20px;text-align:center;color:var(--t3)"><div style="font-size:56px;margin-bottom:16px">💬</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Чат друзей</div><div style="font-size:13px">Здесь общаются риэлторы с душой</div></div>';return;}
-  el.innerHTML=airaMessages.map(m=>{const bg=m.mine?'var(--navy)':'#fff',color=m.mine?'#fff':'var(--t1)',align=m.mine?'me':'bot';return '<div class="msg '+align+'" style="display:flex;gap:8px;max-width:85%;margin-bottom:12px;'+(m.mine?'align-self:flex-end;flex-direction:row-reverse':'align-self:flex-start')+'"><div class="bwrap" style="display:flex;flex-direction:column"><div class="bubble" style="padding:11px 15px;border-radius:16px;font-size:14px;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,0.08);'+(m.mine?'background:var(--navy);color:#fff;border-radius:16px 4px 16px 16px':'background:#fff;color:var(--t1);border-radius:4px 16px 16px 16px')+'">'+m.text+'</div><div class="m-ts" style="font-size:10px;color:var(--t3);margin-top:4px;text-align:'+ (m.mine?'right':'left') +'">'+m.time+'</div></div></div>';}).join('');
+  if(airaMessages.length===0){el.innerHTML='<div style="padding:60px 20px;text-align:center;color:var(--t3)"><div style="font-size:56px;margin-bottom:16px">💬</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Чат друзей</div><div style="font-size:13px">Здесь общаются риэлторы</div></div>';return;}
+  el.innerHTML=airaMessages.map(m=>{const bg=m.mine?'var(--navy)':'#fff',color=m.mine?'#fff':'var(--t1)';return '<div style="display:flex;gap:8px;max-width:85%;margin-bottom:12px;'+(m.mine?'align-self:flex-end;flex-direction:row-reverse':'align-self:flex-start')+'"><div style="padding:11px 15px;border-radius:16px;font-size:14px;'+(m.mine?'background:var(--navy);color:#fff;border-radius:16px 4px 16px 16px':'background:#fff;color:var(--t1);border-radius:4px 16px 16px 16px')+'">'+m.text+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">'+m.time+'</div></div>';}).join('');
   setTimeout(()=>el.scrollTop=el.scrollHeight,50);
 }
 
@@ -270,9 +263,9 @@ function sendAira(){const inp=document.getElementById('aira-inp'),txt=inp?inp.va
 
 function showWarmToast(msg){
   let el=document.getElementById('toast');
-  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1E2D5A,#2E4A85);color:#fff;padding:14px 28px;border-radius:14px;z-index:10000;opacity:0;transition:all 0.3s;font-weight:600;box-shadow:0 8px 30px rgba(30,45,90,0.3);font-size:14px;backdrop-filter:blur(8px);';document.body.appendChild(el);}
-  el.textContent=msg;el.style.opacity='1';el.style.transform='translateX(-50%) translateY(0)';
-  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-50%) translateY(10px)';},3500);
+  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1E2D5A,#2E4A85);color:#fff;padding:14px 28px;border-radius:14px;z-index:10000;opacity:0;transition:all 0.3s;font-weight:600;box-shadow:0 8px 30px rgba(30,45,90,0.3);font-size:14px;';document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';
+  setTimeout(()=>{el.style.opacity='0';},3500);
 }
 
 function openM(id){document.getElementById(id).classList.add('on');}
@@ -300,15 +293,13 @@ function uploadMedia(){
 function toggleTheme(){
   const cur=document.documentElement.getAttribute('data-theme'),next=cur==='dark'?'light':'dark';
   document.documentElement.setAttribute('data-theme',next);localStorage.setItem('theme',next);
-  showWarmToast(next==='dark'?'🌙 Тёмная тема с заботой':'☀️ Светлая тема');
+  showWarmToast(next==='dark'?'🌙 Тёмная тема':'☀️ Светлая');
 }
-
-function setLang(lang){curLang=lang;localStorage.setItem('fp_lang',lang);}
 
 function openDetail(id){
   const l=listings.find(x=>x.id===id);if(!l){showWarmToast('Не найдено');return;}
   if(l.tiktok_url){window.open(l.tiktok_url,'_blank');}
-  else{alert('📄 '+(l.rooms||3)+'-комнатная\n📐 '+l.area+' м²\n💰 '+fmtPrice(l.price)+' ₸\n📍 '+l.city+', '+l.district+'\n\n💙 Нажмите "Позвонить" или "Написать" чтобы связаться');}
+  else{alert('📄 '+(l.rooms||3)+'-комн.\n📐 '+l.area+' м²\n💰 '+fmtPrice(l.price)+' ₸\n\n💙 Нажмите кнопку связи');}
 }
 
 function go(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));const el=document.getElementById(id);if(el)el.classList.add('on');if(id==='s-search')renderListings();if(id==='s-aira')renderAiraChat();}
