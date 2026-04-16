@@ -269,11 +269,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
     <div class="logo-txt">Flapy<span class="logo-tag">™</span></div>
   </div>
   <div class="top-right">
-    <div class="lang-sw">
-      <span class="lo on" id="lo-ru" onclick="setLang('ru')">RU</span>
-      <span class="lo" id="lo-kz" onclick="setLang('kz')">KZ</span>
-    </div>
-    <div class="tb-btn" id="btn-theme" onclick="toggleTheme()"><i class="fas fa-moon"></i></div>
+        <div class="tb-btn" id="btn-theme" onclick="toggleTheme()"><i class="fas fa-moon"></i></div>
     <div style="position:relative">
       <div id="auth-slot"><button class="login-btn" onclick="openM('m-auth')" id="login-btn-top">Войти</button></div>
       <span id="notif-badge"></span>
