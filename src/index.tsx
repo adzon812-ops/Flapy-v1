@@ -11,77 +11,16 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
 })
 
-// ─── API ROUTES ───────────────────────────────────────────────
-app.get('/api/listings', (c) => c.json({ listings: getMockListings() }))
-app.get('/api/realtors', (c) => c.json({ realtors: getMockRealtors() }))
-app.post('/api/ai/describe', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  return c.json({ description: generateAIDesc(b) })
-})
-app.post('/api/auth/register', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  return c.json({ success: true, user: { id: 'u_'+Date.now(), name: b.name, email: b.email, phone: b.phone, agency: b.agency, verified: true, rating: 5.0, deals: 0, reviews: 0 } })
-})
-app.post('/api/auth/login', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  const email = b.email || ''
-  const demo = email.includes('test') || email.includes('demo')
-  return c.json({ success: true, user: { id: 'u1', name: demo ? 'Айгерим Касымова' : 'Риэлтор', email, verified: true, deals: 47, rating: 4.9, agency: 'Century 21', reviews: 23 } })
-})
-app.get('/api/calendar', (c) => c.json({ events: getMockCalendar() }))
-app.post('/api/chat/aira', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  return c.json({ success: true, threadId: 'th_'+Date.now(), message: 'Опубликовано в Aira' })
-})
-app.post('/api/exchange/propose', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  return c.json({ success: true, message: 'Обмен предложен', fromId: b.fromId, toId: b.toId })
-})
-app.get('/api/exchange/matches/:id', (c) => {
-  const id = parseInt(c.req.param('id'))
-  const all = getMockListings()
-  const matches = all.filter((l:any) => l.exchange && l.id !== id)
-  return c.json({ matches })
-})
+app.get('/api/listings', (c) => c.json({ listings: [] }))
+app.get('/api/realtors', (c) => c.json({ realtors: [] }))
+app.post('/api/ai/describe', async (c) => c.json({ description: 'AI описание сгенерировано' }))
+app.post('/api/auth/register', async (c) => c.json({ success: true, user: { id: 'u_'+Date.now(), name: c.req.json().name, email: c.req.json().email } }))
+app.post('/api/auth/login', async (c) => c.json({ success: true, user: { id: 'u1', name: 'Пользователь', email: c.req.json().email } }))
+app.get('/api/calendar', (c) => c.json({ events: [] }))
+app.post('/api/chat/aira', async (c) => c.json({ success: true, message: 'Отправлено' }))
+app.post('/api/exchange/propose', async (c) => c.json({ success: true }))
+app.get('/api/exchange/matches/:id', (c) => c.json({ matches: [] }))
 
-// ─── HELPERS ──────────────────────────────────────────────────
-function generateAIDesc(o: any): string {
-  const types: Record<string,string> = { apartment:'квартира', house:'дом', commercial:'коммерческое помещение', land:'участок' }
-  const t = types[o.type] || 'объект'
-  const ex = o.exchange ? '\n🔄 Рассмотрим обмен — отличная возможность для оптимизации налогов!' : ''
-  const p = o.price ? (Number(o.price)/1e6).toFixed(1)+' млн ₸' : 'по договору'
-  const features = ['Развитая инфраструктура', 'Рядом транспорт', 'Ухоженный двор', 'Консьерж']
-  const feat = features.slice(0,2).join(' · ')
-  return `✨ ${o.rooms ? o.rooms+'-комнатная ' : ''}${t}${o.area ? ', '+o.area+' м²' : ''} в ${o.district || 'Астане'}!\n\n🏆 ${feat}\n💰 Цена: ${p}${ex}\n\n📍 ${o.district || 'Есиль'}, ${o.city || 'Астана'}\n📞 Звоните — покажу в любое удобное время!`
-}
-
-function getMockRealtors() {
-  return [
-    { id:'r1', name:'Айгерим Касымова', agency:'Century 21', rating:4.9, deals:47, reviews:23, phone:'+7 701 234 56 78', photo:'А', color:'#1E2D5A', specialization:'Квартиры, новострой', experience:5, badge:'ТОП', verified:true },
-    { id:'r2', name:'Данияр Мусин', agency:'Etagi', rating:4.7, deals:32, reviews:18, phone:'+7 702 345 67 89', photo:'Д', color:'#F47B20', specialization:'Дома, коттеджи', experience:7, badge:'', verified:true },
-    { id:'r3', name:'Сауле Тлеубекова', agency:'Royal Group', rating:5.0, deals:68, reviews:41, phone:'+7 707 456 78 90', photo:'С', color:'#27AE60', specialization:'Коммерция', experience:9, badge:'ТОП', verified:true },
-    { id:'r4', name:'Нурлан Ахметов', agency:'Самозанятый', rating:4.6, deals:23, reviews:12, phone:'+7 705 567 89 01', photo:'Н', color:'#9B59B6', specialization:'Обмен, любые', experience:3, badge:'', verified:true },
-    { id:'r5', name:'Асель Бекова', agency:'Etagi', rating:4.8, deals:38, reviews:19, phone:'+7 708 678 90 12', photo:'А', color:'#E67E22', specialization:'Новострой', experience:4, badge:'', verified:true },
-  ]
-}
-
-function getMockListings() {
-  return [
-    { id:1, type:'apartment', rooms:3, area:85, district:'Есильский', city:'Астана', price:78500000, exchange:false, hasVideo:false, realtor:'Айгерим К.', realtorId:'r1', realtorFull:'Айгерим Касымова', rating:4.9, deals:47, agency:'Century 21', tags:['Новострой'], badge:'Новое', desc:'Просторная 3-комнатная с панорамным видом. Ремонт евро-класса.', phone:'+7 701 234 56 78' },
-    { id:2, type:'apartment', rooms:3, area:82, district:'Алматинский', city:'Астана', price:62000000, exchange:false, hasVideo:false, realtor:'Данияр М.', realtorId:'r2', realtorFull:'Данияр Мусин', rating:4.7, deals:32, agency:'Etagi', tags:['Горящее'], badge:'Горящее', desc:'Новый ЖК, полная отделка, никто не жил.', phone:'+7 702 345 67 89' }
-  ]
-}
-
-function getMockCalendar() {
-  const t = new Date()
-  const dt = (d:number,h:number,m:number) => new Date(t.getFullYear(),t.getMonth(),t.getDate()+d,h,m).toISOString()
-  return [
-    { id:1, title:'Показ квартиры 3к Есиль', time:dt(0,10,0), type:'showing', client:'Алия С.', note:'Взять ключи от 401', color:'#F47B20' },
-    { id:2, title:'Звонок клиенту', time:dt(0,14,30), type:'call', client:'Данияр М.', note:'Обсудить ипотеку Halyk', color:'#27AE60' }
-  ]
-}
-
-// ─── MAIN HTML (FIXED) ────────────────────────────────────────
 app.get('/', (c) => c.html(getHTML()))
 
 function getHTML(): string {
@@ -324,7 +263,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 <body>
 <div id="app-shell"><div id="app-wrap">
 
-<!-- LOADER -->
 <div id="loader">
   <div class="ld-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
   <div class="ld-name">Flapy<span class="ld-tm">™</span></div>
@@ -332,7 +270,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   <div class="ld-bar-wrap"><div class="ld-bar"></div></div>
 </div>
 
-<!-- TOPBAR -->
 <div id="topbar">
   <div class="logo-row">
     <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
@@ -351,10 +288,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- MAIN -->
 <div id="main">
-
-<!-- OBJECTS -->
 <div id="s-search" class="scr on">
   <div class="list-header">
     <div class="lh-top">
@@ -374,11 +308,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
   <div class="list-body" id="list-body"></div>
 </div>
-
-<!-- FEED -->
 <div id="s-feed" class="scr"></div>
-
-<!-- AIRA CHAT (FIXED STRUCTURE) -->
 <div id="s-aira" class="scr">
   <div class="chat-wrap">
     <div class="chat-header">
@@ -396,18 +326,10 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
     </div>
   </div>
 </div>
-
-<!-- PROFILE -->
 <div id="s-prof" class="scr"><div class="prof-wrap" id="prof-body"></div></div>
-
-<!-- NOTIFICATIONS -->
-<div id="s-notif" class="scr">
-  <div class="notif-wrap" id="notif-body"></div>
+<div id="s-notif" class="scr"><div class="notif-wrap" id="notif-body"></div></div>
 </div>
 
-</div><!-- /main -->
-
-<!-- BOTTOM NAV -->
 <div id="botbar">
   <div class="nav-it on" id="n-search" onclick="go('s-search');nav(this)">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
@@ -428,9 +350,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- MODALS -->
-
-<!-- AUTH -->
 <div class="overlay" id="m-auth" onclick="closeOvl(event,'m-auth')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -440,7 +359,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <div class="tsw" id="at-up" onclick="authTab('up')" data-ru="Регистрация" data-kz="Тіркелу">Регистрация</div>
       </div>
       <div id="af-in">
-        <div class="info-box warn"><span>💡</span><span id="tx-test-hint">Тест: <b>test@realtor.kz</b> / <b>demo123</b></span></div>
+        <div class="info-box warn"><span>💡</span><span>Вход нужен для сохранения в облаке</span></div>
         <label class="flabel" id="tx-email-lbl">Email</label>
         <input class="finput" type="email" id="l-email" placeholder="you@mail.com" autocomplete="email">
         <label class="flabel" id="tx-pass-lbl">Пароль</label>
@@ -449,9 +368,9 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <button class="btn-secondary" onclick="authTab('up')" id="tx-no-acc">Нет аккаунта? Зарегистрироваться</button>
       </div>
       <div id="af-up" style="display:none">
-        <div class="info-box"><span>🏠</span><span id="tx-reg-hint">Только для риэлторов — верифицированный статус сразу</span></div>
+        <div class="info-box"><span>🏠</span><span>Регистрация для риэлторов</span></div>
         <label class="flabel">ФИО</label>
-        <input class="finput" type="text" id="r-name" placeholder="Айгерим Касымова">
+        <input class="finput" type="text" id="r-name" placeholder="Имя Фамилия">
         <label class="flabel">Email</label>
         <input class="finput" type="email" id="r-email" placeholder="you@mail.com">
         <label class="flabel">Телефон</label>
@@ -470,7 +389,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- ADD LISTING -->
 <div class="overlay" id="m-add" onclick="closeOvl(event,'m-add')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -498,9 +416,9 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       <label class="flabel">Цена ₸</label>
       <input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
       
-      <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
-        <input type="checkbox" id="a-exchange" style="width:18px;height:18px;accent-color:var(--green)">
-        <label for="a-exchange" style="font-size:13px;font-weight:600;cursor:pointer">🔄 Рассмотрю обмен</label>
+      <div style="display:flex;align-items:center;gap:8px;margin:12px 0;padding:10px;background:rgba(39,174,96,.08);border:1.5px solid rgba(39,174,96,.25);border-radius:10px">
+        <input type="checkbox" id="a-exchange" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">
+        <label for="a-exchange" style="font-size:13px;font-weight:600;color:var(--t1);cursor:pointer;margin:0">🔄 Рассмотрю обмен</label>
       </div>
       
       <label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
@@ -527,12 +445,10 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- DETAIL -->
 <div class="overlay" id="m-det" onclick="closeOvl(event,'m-det')">
   <div class="sheet" id="m-det-body"></div>
 </div>
 
-<!-- MORE MENU (REMOVED REALTORS & CALENDAR) -->
 <div class="overlay" id="m-more" onclick="closeOvl(event,'m-more')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -545,7 +461,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <div class="more-ico">👤</div><div class="more-name" data-ru="Профиль" data-kz="Профиль">Профиль</div><div class="more-sub" data-ru="Мой аккаунт" data-kz="Аккаунтым">Мой аккаунт</div>
       </div>
       <div class="more-item" onclick="closeM('m-more');go('s-notif');nav(null)">
-        <div class="more-ico">🔔</div><div class="more-name" data-ru="Уведомления" data-kz="Хабарламалар">Уведомления</div><div class="more-sub" id="menu-notif-badge" data-ru="3 новых" data-kz="3 жаңа">3 новых</div>
+        <div class="more-ico">🔔</div><div class="more-name" data-ru="Уведомления" data-kz="Хабарламалар">Уведомления</div><div class="more-sub" id="menu-notif-badge" data-ru="0 новых" data-kz="0 жаңа">0 новых</div>
       </div>
       <div class="more-item" onclick="closeM('m-more');openM('m-add')">
         <div class="more-ico">🏠</div><div class="more-name" data-ru="Добавить" data-kz="Қосу">Добавить</div><div class="more-sub" data-ru="Новый объект" data-kz="Жаңа объект">Новый объект</div>
@@ -554,7 +470,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script src="/static/app.js"></script>
