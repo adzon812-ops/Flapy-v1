@@ -192,7 +192,16 @@ function go(id){document.querySelectorAll('.scr').forEach(function(s){s.classLis
 function nav(el){document.querySelectorAll('.nav-it').forEach(function(n){n.classList.remove('on');});if(el)el.classList.add('on');}
 function setListTab(t){listTab=t;var a=document.getElementById('tab-obj'),b=document.getElementById('tab-exch');if(a)a.classList.toggle('on',t==='obj');if(b)b.classList.toggle('on',t==='exch');renderListings();}
 function setFilt(el,f){document.querySelectorAll('.fchip').forEach(function(c){c.classList.remove('on');});if(el)el.classList.add('on');curFilter=f;renderListings();}
-function openAddListing(){if(needAuth(function(){openM('m-add');setTimeout(function(){document.getElementById('a-price').value='';document.getElementById('a-desc').value='';document.getElementById('ai-box-wrap').style.display='none';},100);}))};
+
+function openAddListing(){
+  if(!curUser){toast('🔐 Войдите сначала');openM('m-auth');return;}
+  openM('m-add');
+  setTimeout(function(){
+    var p=document.getElementById('a-price'),d=document.getElementById('a-desc'),w=document.getElementById('ai-box-wrap');
+    if(p)p.value='';if(d)d.value='';if(w)w.style.display='none';
+  },100);
+}
+
 function needAuth(cb){if(!curUser){toast('🔐 Войдите сначала');openM('m-auth');return false;}if(typeof cb==='function')cb();return true;}
 function showMore(){openM('m-more');}
 function openM(id){var e=document.getElementById(id);if(e)e.classList.add('on');}
