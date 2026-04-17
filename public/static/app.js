@@ -1,4 +1,4 @@
-/*FLAPY app.js v16.0 — SUPABASE SYNC + ALL FEATURES v14.0 */
+/* FLAPY app.js v16.0 — SUPABASE SYNC + ALL FEATURES v14.0 */
 'use strict';
 
 /* ════════════════════════════════════════════════════
@@ -77,12 +77,13 @@ function loadFromSupabase() {
         district: item.district,
         price: item.price,
         desc: item.description, // ✅ ВАЖНО: база → код
+        exchange: item.exchange || false,
         realtor: item.realtor_name || 'Риэлтор',
         realtorFull: item.realtor_name || 'Риэлтор',
         agency: item.agency || '-',
         phone: item.phone || '+7 701 234 56 78',
         badge: item.badge || 'Новое',
-        tags: item.tags || [],
+        tags: item.tags || (item.exchange ? ['Обмен'] : []),
         hasVideo: item.has_video || false,
         liked: false,
         photos: item.photo_urls || [],
@@ -126,6 +127,7 @@ function saveToSupabase(listing) {
     district: listing.district,
     price: listing.price,
     description: listing.desc, // ✅ ВАЖНО: код → база
+    exchange: listing.exchange || false,
     phone: listing.phone,
     badge: listing.badge,
     photo_urls: listing.photos,
@@ -143,8 +145,8 @@ function saveToSupabase(listing) {
 ═══════════════════════════════════════════════════ */
 function getFallbackListings(){
   return [
-    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:78500000,hasVideo:false,realtor:'Айгерим К.',realtorFull:'Айгерим Касымова',rating:4.9,agency:'Century 21',badge:'Новое',desc:'Просторная 3-комнатная квартира с панорамным видом.',phone:'+7 701 234 56 78',liked:false,photos:[],videos:[]},
-    {id:2,type:'apartment',rooms:3,area:82,district:'Алматинский',city:'Астана',price:62000000,hasVideo:false,realtor:'Данияр М.',realtorFull:'Данияр Мусин',rating:4.7,agency:'Etagi',badge:'Горящее',desc:'Отличная 3-комнатная в новом ЖК.',phone:'+7 702 345 67 89',liked:false,photos:[],videos:[]}
+    {id:1,type:'apartment',rooms:3,area:85,district:'Есильский',city:'Астана',price:78500000,exchange:false,hasVideo:false,realtor:'Айгерим К.',realtorFull:'Айгерим Касымова',rating:4.9,agency:'Century 21',badge:'Новое',desc:'Просторная 3-комнатная квартира с панорамным видом.',phone:'+7 701 234 56 78',liked:false,photos:[],videos:[]},
+    {id:2,type:'apartment',rooms:3,area:82,district:'Алматинский',city:'Астана',price:62000000,exchange:false,hasVideo:false,realtor:'Данияр М.',realtorFull:'Данияр Мусин',rating:4.7,agency:'Etagi',badge:'Горящее',desc:'Отличная 3-комнатная в новом ЖК.',phone:'+7 702 345 67 89',liked:false,photos:[],videos:[]}
   ];
 }
 
@@ -211,6 +213,7 @@ function submitListing(){
   var areaEl=document.getElementById('a-area');
   var cityEl=document.getElementById('a-city');
   var districtEl=document.getElementById('a-district');
+  var exchangeEl=document.getElementById('a-exchange');
   
   if(!priceEl){console.error('❌ Price not found');alert('Ошибка: поле цены');return;}
   if(!descEl){console.error('❌ Desc not found');alert('Ошибка: поле описания');return;}
@@ -223,6 +226,7 @@ function submitListing(){
   var area=areaEl?parseInt(areaEl.value):85;
   var city=cityEl?cityEl.value:'Астана';
   var district=districtEl?districtEl.value:'Есиль';
+  var exchange=exchangeEl?exchangeEl.checked:false;
   
   if(!desc||desc.trim()===''){alert('Введите описание');return;}
   if(price<=0){alert('Введите цену');return;}
@@ -239,12 +243,13 @@ function submitListing(){
     district:district,
     price:price,
     desc:desc,
+    exchange:exchange,
     realtor:curUser?curUser.name:'Гость',
     realtorFull:curUser?curUser.name:'Гость',
     agency:curUser?'Моё агентство':'-',
     phone:'+7 701 234 56 78',
     badge:'Новое',
-    tags:[],
+    tags:exchange?['Обмен']:['Новое'],
     hasVideo:videosCopy.length>0,
     liked:false,
     photos:photosCopy,
