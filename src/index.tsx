@@ -497,6 +497,12 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       </select>
       <label class="flabel">Цена ₸</label>
       <input class="finput" type="text" id="a-price" placeholder="10 000 000" oninput="formatPriceInput(this)">
+      
+      <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
+        <input type="checkbox" id="a-exchange" style="width:18px;height:18px;accent-color:var(--green)">
+        <label for="a-exchange" style="font-size:13px;font-weight:600;cursor:pointer">🔄 Рассмотрю обмен</label>
+      </div>
+      
       <label class="flabel">Описание <span class="ai-label"><i class="fas fa-magic"></i> AI</span></label>
       <textarea class="finput" id="a-desc" placeholder="Опишите объект или нажмите AI..."></textarea>
       <div id="ai-box-wrap" style="display:none">
