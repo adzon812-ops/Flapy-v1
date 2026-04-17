@@ -23,7 +23,6 @@ window.addEventListener('load',function(){
   if(db) loadFromSupabase();
   else renderListings();
   
-  // Приветственное сообщение в Aira
   if(airaMessages.length===0){
     addSystemMessage('Добро пожаловать в Aira — место, где риэлторы поддерживают друг друга 🤍');
     addSystemMessage('Здесь можно делиться объектами, идеями и просто говорить по душам');
@@ -85,18 +84,18 @@ function generateAIVariants(listing) {
     area: listing.area || '',
     district: listing.district || '',
     price: listing.price ? (listing.price/1e6).toFixed(1) + ' млн ₸' : 'по договорённости',
-    floor: listing.floor_number ? `${listing.floor_number}/${listing.total_floors || '?'} эт.` : '',
+    floor: listing.floor_number ? listing.floor_number+'/'+(listing.total_floors || '?')+' эт.' : '',
     building: listing.building_name || '',
-    ceiling: listing.ceiling_height ? `потолки ${listing.ceiling_height} м` : '',
+    ceiling: listing.ceiling_height ? 'потолки '+listing.ceiling_height+' м' : '',
     exchange: listing.exchange ? '🔄 Возможен обмен' : ''
   };
 
   return [
-    `✨ Уютная ${data.rooms}-комнатная квартира в сердце ${data.district}!\n\n🏠 ${data.building ? `ЖК «${data.building}», ` : ''}${data.area} м² чистой гармонии.${data.floor ? ` ${data.floor}.` : ''}${data.ceiling ? ` ${data.ceiling}.` : ''}\n\n🌿 Здесь хорошо жить: тихий двор, развитая инфраструктура, всё рядом.\n💰 ${data.price} ${data.exchange ? `\n${data.exchange}` : ''}\n\n💌 Приходите, покажем с душой.`,
+    '✨ Уютная '+data.rooms+'-комнатная квартира в сердце '+data.district+'!\n\n🏠 '+(data.building ? 'ЖК «'+data.building+'», ' : '')+data.area+' м² чистой гармонии.'+(data.floor ? ' '+data.floor+'.' : '')+(data.ceiling ? ' '+data.ceiling+'.' : '')+'\n\n🌿 Здесь хорошо жить: тихий двор, развитая инфраструктура, всё рядом.\n💰 '+data.price+' '+(data.exchange ? '\n'+data.exchange : '')+'\n\n💌 Приходите, покажем с душой.',
 
-    `🔥 ${data.rooms}-к. квартира, ${data.area} м² — ваш новый старт в Астане!\n\n📍 ${data.district} ${data.building ? `· ЖК «${data.building}»` : ''}\n🏗 ${data.floor || 'Этаж уточняется'} ${data.ceiling ? `· ${data.ceiling}` : ''}\n\n✅ Почему это выгодно:\n• Локация с потенциалом роста\n• Планировка без лишних метров\n\n💰 ${data.price} ${data.exchange ? `\n🔄 ${data.exchange}` : ''}\n\n📞 Звоните — обсудим детали!`,
+    '🔥 '+data.rooms+'-к. квартира, '+data.area+' м² — ваш новый старт в Астане!\n\n📍 '+data.district+' '+(data.building ? '· ЖК «'+data.building+'»' : '')+'\n🏗 '+data.floor+' '+(data.ceiling ? '· '+data.ceiling : '')+'\n\n✅ Почему это выгодно:\n• Локация с потенциалом роста\n• Планировка без лишних метров\n\n💰 '+data.price+' '+(data.exchange ? '\n🔄 '+data.exchange : '')+'\n\n📞 Звоните — обсудим детали!',
 
-    `Дом, где хочется жить 🤍\n\n${data.rooms} комнаты · ${data.area} м² · ${data.district}\n${data.building ? `ЖК «${data.building}»\n` : ''}${data.floor ? `${data.floor} · ` : ''}${data.ceiling || ''}\n\nЗдесь тихо, светло и по-домашнему уютно. Рядом всё, что важно.\n\n💰 ${data.price}\n${data.exchange ? `\n🔄 ${data.exchange}` : ''}\n\nПриходите на просмотр — почувствуете атмосферу.`
+    'Дом, где хочется жить 🤍\n\n'+data.rooms+' комнаты · '+data.area+' м² · '+data.district+'\n'+(data.building ? 'ЖК «'+data.building+'»\n' : '')+(data.floor ? data.floor+' · ' : '')+(data.ceiling || '')+'\n\nЗдесь тихо, светло и по-домашнему уютно. Рядом всё, что важно.\n\n💰 '+data.price+'\n'+(data.exchange ? '\n🔄 '+data.exchange : '')+'\n\nПриходите на просмотр — почувствуете атмосферу.'
   ];
 }
 
@@ -175,12 +174,12 @@ function genAI(){
   
   wrap.innerHTML = '<div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:8px">✨ ИИ предложил варианты — выберите любимый:</div>' +
     '<div class="ai-variants">' +
-    variants.map((v, i) => `
-      <div class="ai-variant" onclick="selectAIVariant(${i}, this)">
-        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:4px">Вариант ${i+1}</div>
-        <div style="font-size:12px;line-height:1.5;color:var(--t2);white-space:pre-line">${v}</div>
-      </div>
-    `).join('') +
+    variants.map(function(v, i) {
+      return '<div class="ai-variant" onclick="selectAIVariant('+i+', this)">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:4px">Вариант '+(i+1)+'</div>' +
+        '<div style="font-size:12px;line-height:1.5;color:var(--t2);white-space:pre-line">'+v+'</div>' +
+      '</div>';
+    }).join('') +
     '</div>' +
     '<button class="btn-secondary" onclick="genAI()" style="margin-top:8px">🔄 Ещё варианты</button>';
   
@@ -233,7 +232,7 @@ function renderListings(){
   
   el.innerHTML=filtered.map(function(l){
     var ini=(l.realtor||'R').charAt(0);
-    var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':'🏪';
+    var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':'';
     var photo=l.photos&&l.photos.length>0?l.photos[0]:null;
     
     var media=photo?
@@ -270,7 +269,6 @@ function doLogin(){
   var e=document.getElementById('l-email')?.value.trim()||'';
   var p=document.getElementById('l-pass')?.value.trim()||'';
   
-  // 🔐 Скрытый админ
   if(e === 'admin@flapy.kz' && p === 'FlapyLove2026!') {
     curUser = {id: 'admin_001', name: 'Админ', email: e, role: 'admin', agency: 'Flapy'};
     localStorage.setItem('fp_user', JSON.stringify(curUser));
@@ -353,16 +351,74 @@ function go(id){
 }
 
 function nav(el){document.querySelectorAll('.nav-it').forEach(function(n){n.classList.remove('on');});if(el)el.classList.add('on');}
-function setListTab(t){listTab=t;document.querySelectorAll('.tab-item').forEach(function(el,i){el.classList.toggle('on',(t==='obj'&&i===0)||(t==='exch'&&i===1);});renderListings();}
-function setFilt(el,f){document.querySelectorAll('.fchip').forEach(function(c){c.classList.remove('on');});if(el)el.classList.add('on');curFilter=f;renderListings();}
-function openAddListing(){if(!curUser){toast('🔐 Войдите сначала');openM('m-auth');return;}openM('m-add');setTimeout(function(){document.getElementById('a-price').value='';document.getElementById('a-desc').value='';document.getElementById('ai-variants-wrap').style.display='none';},100);}
-function needAuth(cb){if(!curUser){toast('🔐 Войдите');openM('m-auth');return false;}if(typeof cb==='function')cb();return true;}
+
+function setListTab(t){
+  listTab=t;
+  document.querySelectorAll('.tab-item').forEach(function(el,i){
+    el.classList.toggle('on',(t==='obj'&&i===0)||(t==='exch'&&i===1));
+  });
+  renderListings();
+}
+
+function setFilt(el,f){
+  document.querySelectorAll('.fchip').forEach(function(c){c.classList.remove('on');});
+  if(el)el.classList.add('on');
+  curFilter=f;
+  renderListings();
+}
+
+function openAddListing(){
+  if(!curUser){toast('🔐 Войдите сначала');openM('m-auth');return;}
+  openM('m-add');
+  setTimeout(function(){
+    document.getElementById('a-price').value='';
+    document.getElementById('a-desc').value='';
+    document.getElementById('ai-variants-wrap').style.display='none';
+  },100);
+}
+
+function needAuth(cb){
+  if(!curUser){toast('🔐 Войдите');openM('m-auth');return false;}
+  if(typeof cb==='function')cb();
+  return true;
+}
+
 function showMore(){openM('m-more');}
 function openM(id){var e=document.getElementById(id);if(e)e.classList.add('on');}
 function closeM(id){var e=document.getElementById(id);if(e)e.classList.remove('on');}
 function closeOvl(e,id){if(e.target.id===id)closeM(id);}
-function formatPriceInput(i){if(!i||!i.value)return;var v=i.value.replace(/\D/g,'');if(v){var n=parseInt(v);if(!isNaN(n))i.value=n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');}}
-function esc(s){return(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtPrice(p){if(p==null||p==='')return'0';var n=Number(p);if(isNaN(n))return String(p);return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
-function toast(m){var e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.style.cssText='position:absolute;bottom:78px;left:50%;transform:translateX(-50%);background:rgba(30,45,90,.9);color:#fff;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:600;z-index:600;opacity:0;transition:opacity .2s';document.body.appendChild(e);}e.textContent=m;e.style.opacity='1';setTimeout(function(){e.style.opacity='0';},2400);}
+
+function formatPriceInput(i){
+  if(!i||!i.value)return;
+  var v=i.value.replace(/\D/g,'');
+  if(v){
+    var n=parseInt(v);
+    if(!isNaN(n))i.value=n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  }
+}
+
+function esc(s){
+  return(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtPrice(p){
+  if(p==null||p==='')return'0';
+  var n=Number(p);
+  if(isNaN(n))return String(p);
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
+
+function toast(m){
+  var e=document.getElementById('toast');
+  if(!e){
+    e=document.createElement('div');
+    e.id='toast';
+    e.style.cssText='position:absolute;bottom:78px;left:50%;transform:translateX(-50%);background:rgba(30,45,90,.9);color:#fff;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:600;z-index:600;opacity:0;transition:opacity .2s';
+    document.body.appendChild(e);
+  }
+  e.textContent=m;
+  e.style.opacity='1';
+  setTimeout(function(){e.style.opacity='0';},2400);
+}
+
 function callRealtor(p){toast('📞 '+p);}
