@@ -1,4 +1,4 @@
-/* FLAPY app.js v19.0 — Gemini AI · Email Auth · No Aira for Guests */
+/* FLAPY app.js v20.0 — Gemini AI · Email Auth Only · Fixed Everything */
 'use strict';
 
 var SUPABASE_URL = 'https://qjmfudpqfyanigizwvze.supabase.co';
@@ -18,7 +18,7 @@ window.addEventListener('load', function(){
   try{var n=localStorage.getItem('fp_notifications');if(n)notifications=JSON.parse(n);}catch(e){}
   
   curLang=localStorage.getItem('fp_lang')||'ru';
-  if(curUser){renderAuthSlot();updateNavVisibility();}
+  if(curUser){renderAuthSlot();updateNavVisibility();if(db)loadAiraMessages();}
   else{updateNavVisibility();}
   
   var ld=document.getElementById('loader');
@@ -27,7 +27,7 @@ window.addEventListener('load', function(){
   if(db) loadFromSupabase();
   else renderListings();
   
-  console.log('✅ Flapy v19.0 loaded');
+  console.log('✅ Flapy v20.0 loaded');
 });
 
 function loadFromSupabase(){
@@ -67,9 +67,12 @@ function saveToSupabase(listing){
   }]);
 }
 
+/* ════════════════════════════════════════════════════
+   🤖 AI DESCRIPTIONS — GEMINI (Fixed)
+═══════════════════════════════════════════════════ */
 function genAI(){
   var wrap=document.getElementById('ai-variants-wrap');
-  if(!wrap) return;
+  if(!wrap) { console.error('❌ ai-variants-wrap not found'); return; }
   
   var data={
     type:document.getElementById('a-type')?.value||'apartment',
@@ -85,21 +88,25 @@ function genAI(){
   };
   
   wrap.style.display='block';
-  wrap.innerHTML='<div class="ai-loading">✨ AI пишет описание... подождите немного</div>';
+  wrap.innerHTML='<div class="ai-loading" style="padding:20px;text-align:center;color:var(--t3)">✨ AI пишет описание... подождите немного</div>';
   
   var btn=document.getElementById('ai-gen-btn');
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Генерирую...';}
+  if(btn){btn.disabled=true;btn.innerHTML='⏳ Генерирую...';}
   
   fetch('/api/ai/describe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-  .then(function(r){return r.json();})
+  .then(function(r){
+    if(!r.ok) throw new Error('API error: '+r.status);
+    return r.json();
+  })
   .then(function(res){
     var descs=res.descriptions||[];
-    if(descs.length===0) throw new Error('empty');
+    if(!descs || descs.length===0) throw new Error('Пустой ответ от AI');
     renderAIVariants(descs);
+    toast('✨ AI сгенерировал '+descs.length+' варианта!');
   })
   .catch(function(e){
-    console.warn('AI error:',e);
-    wrap.innerHTML='<div style="padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--t2)">⚠️ AI временно недоступен. Напишите описание вручную — это тоже отлично!</div>';
+    console.error('AI error:',e);
+    wrap.innerHTML='<div style="padding:15px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;color:#dc2626">⚠️ Ошибка AI: '+e.message+'. Попробуйте ещё раз или напишите описание вручную.</div>';
   })
   .finally(function(){
     if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-robot"></i> Сгенерировать 2 варианта описания AI';}
@@ -108,22 +115,50 @@ function genAI(){
 
 function renderAIVariants(descs){
   var wrap=document.getElementById('ai-variants-wrap');
-  var html='<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">✨ ИИ предложил варианты — выберите любимый:</div>';
+  if(!wrap) return;
+  
+  if(!descs || descs.length===0){
+    wrap.innerHTML='<div style="padding:10px;color:var(--red)">⚠️ AI не вернул вариантов</div>';
+    return;
+  }
+  
+  var html='<div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:10px;padding:0 5px">✨ ИИ предложил варианты — нажмите "Использовать" на понравившемся:</div>';
+  
   descs.forEach(function(text,i){
-    if(!text) return;
-    html+='<div class="ai-variant" onclick="useAIVariant(\''+text.replace(/'/g,"\\'")+'\')"><div class="ai-variant-label">Вариант '+(i+1)+'</div><div style="font-size:12px;line-height:1.6;color:var(--t2);white-space:pre-wrap">'+esc(text)+'</div><button class="ai-choose-btn" onclick="event.stopPropagation()">✅ Использовать этот</button></div>';
+    if(!text || text.trim()==='') return;
+    // Безопасное экранирование для onclick
+    var safeText=encodeURIComponent(text);
+    html+='<div style="background:var(--bg3);border:2px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:10px;transition:border-color .2s" onmouseover="this.style.borderColor=\'var(--orange)\'" onmouseout="this.style.borderColor=\'var(--brd)\'"><div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">📝 Вариант '+(i+1)+'</div><div style="font-size:12px;line-height:1.6;color:var(--t2);white-space:pre-wrap;margin-bottom:10px">'+esc(text)+'</div><button type="button" onclick="useAIVariant(\''+safeText+'\')" style="width:100%;padding:8px;border-radius:8px;background:var(--navy);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">✅ Использовать этот вариант</button></div>';
   });
-  html+='<div class="ai-actions"><button class="ai-act-btn" onclick="genAI()">🔄 Попробовать ещё</button><button class="ai-act-btn" onclick="document.getElementById(\'ai-variants-wrap\').style.display=\'none\'">✕ Скрыть</button></div>';
+  
+  html+='<div style="display:flex;gap:8px;margin-top:12px"><button type="button" onclick="genAI()" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--brd);color:var(--t2);font-size:11px;cursor:pointer">🔄 Ещё варианты</button><button type="button" onclick="document.getElementById(\'ai-variants-wrap\').style.display=\'none\'" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--brd);color:var(--t2);font-size:11px;cursor:pointer">✕ Закрыть</button></div>';
+  
   wrap.innerHTML=html;
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-function useAIVariant(text){
+function useAIVariant(encodedText){
   var desc=document.getElementById('a-desc');
-  if(desc) desc.value=text;
+  if(!desc){
+    toast('❌ Ошибка: поле описания не найдено');
+    return;
+  }
+  
+  // Декодируем текст
+  var text=decodeURIComponent(encodedText);
+  
+  desc.value=text;
+  desc.focus();
+  desc.style.background='rgba(39,174,96,.1)';
+  setTimeout(function(){desc.style.background='';},1000);
+  
   document.getElementById('ai-variants-wrap').style.display='none';
-  toast('✅ Текст применён — можете дополнить его!');
+  toast('✅ Описание применено! Можете отредактировать если нужно 🤍');
 }
 
+/* ════════════════════════════════════════════════════
+   📤 SUBMIT LISTING
+═══════════════════════════════════════════════════ */
 function submitListing(){
   if(!curUser){toast('🔐 Войдите, чтобы публиковать объекты');openM('m-auth');return;}
   
@@ -207,6 +242,9 @@ function updateMediaCounters(){
   if(vc) vc.textContent=(uploadedMedia.videos||[]).length>0 ? (uploadedMedia.videos.length+' видео') : '';
 }
 
+/* ════════════════════════════════════════════════════
+   🎨 RENDER LISTINGS & DETAILS
+═══════════════════════════════════════════════════ */
 function renderListings(){
   var el=document.getElementById('list-body');
   if(!el) return;
@@ -248,6 +286,9 @@ function openDetail(id){
   openM('m-det');
 }
 
+/* ════════════════════════════════════════════════════
+   👤 PROFILE & AUTH
+═══════════════════════════════════════════════════ */
 function renderProf(){
   var el=document.getElementById('prof-body');
   if(!el) return;
@@ -264,6 +305,12 @@ function renderProf(){
 function doLogin(){
   var email=(document.getElementById('l-email')?.value||'').trim().toLowerCase();
   var pass=(document.getElementById('l-pass')?.value||'').trim();
+  
+  // Проверка: только латиница и цифры в email
+  if(!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)){
+    toast('📧 Email только на английском (латиница)');
+    return;
+  }
   if(!email){toast('📧 Введите email');return;}
   if(!pass){toast('🔑 Введите пароль');return;}
   
@@ -298,6 +345,11 @@ function doReg(){
   var agency=(document.getElementById('r-agency')?.value||'').trim();
   var pass=(document.getElementById('r-pass')?.value||'').trim();
   
+  // Проверка: только латиница и цифры в email
+  if(!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)){
+    toast('📧 Email только на английском (латиница и цифры)');
+    return;
+  }
   if(!name){toast('📝 Введите ваше имя');return;}
   if(!email){toast('📧 Введите email');return;}
   if(!pass || pass.length<6){toast('🔑 Пароль минимум 6 символов');return;}
@@ -334,6 +386,7 @@ function onLoggedIn(){
   renderProf();
   updateNavVisibility();
   updateAiraBadge();
+  if(db) loadAiraMessages();
   toast('👋 С возвращением, '+curUser.name.split(' ')[0]+'!');
 }
 
@@ -370,16 +423,33 @@ function authTab(tab){
   if(w) w.textContent=tab==='in'?'Рады вас видеть! 🏠':'Добро пожаловать в Flapy! ✨';
 }
 
-function updateAiraBadge(){
-  var b=document.getElementById('aira-badge');
-  if(!b) return;
-  if(curUser){
-    b.textContent='✓ '+curUser.name.split(' ')[0];
-    b.style.cssText='background:rgba(255,255,255,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#fff;font-weight:600';
-  }else{
-    b.textContent='🔒 Гость';
-    b.style.cssText='background:rgba(255,255,255,.1);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600';
-  }
+/* ════════════════════════════════════════════════════
+   💬 AIRA CHAT — Fixed & Working
+═══════════════════════════════════════════════════ */
+function loadAiraMessages(){
+  if(!db) return;
+  
+  db.from('messages').select('*').order('created_at',{ascending:true}).limit(50).then(function(res){
+    if(res.error){
+      console.error('❌ Ошибка загрузки:',res.error);
+      return;
+    }
+    
+    var msgs=res.data||[];
+    airaMessages=msgs.map(function(m){
+      return {
+        id:m.id,
+        author:m.user_name||'Риэлтор',
+        text:m.content,
+        time:formatTime(m.created_at),
+        mine:curUser && (m.user_id===curUser.id),
+        userId:m.user_id
+      };
+    });
+    
+    renderAiraChat();
+    console.log('✅ Загружено сообщений:',airaMessages.length);
+  });
 }
 
 function renderAiraChat(){
@@ -396,36 +466,127 @@ function renderAiraChat(){
 }
 
 function sendAira(){
-  if(!curUser){toast('🔐 Войдите, чтобы писать коллегам');openM('m-auth');return;}
+  if(!curUser){
+    toast('🔐 Войдите, чтобы писать коллегам');
+    openM('m-auth');
+    return;
+  }
+  
   var inp=document.getElementById('aira-inp');
   var txt=inp?inp.value.trim():'';
-  if(!txt) return;
+  if(!txt){
+    toast('💬 Введите сообщение');
+    return;
+  }
   
   var now=new Date();
   var tm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   
-  airaMessages.push({id:Date.now(),author:curUser.name,text:txt,time:tm,mine:true});
+  // Добавляем локально для мгновенного отображения
+  airaMessages.push({
+    id:Date.now(),
+    author:curUser.name,
+    text:txt,
+    time:tm,
+    mine:true,
+    userId:curUser.id
+  });
+  
   inp.value='';
   inp.style.height='auto';
   renderAiraChat();
   
+  // Сохраняем в Supabase
   if(db){
     db.from('messages').insert([{
-      user_id:curUser.id,
+      user_id:curUser.id||curUser.sbId,
       user_name:curUser.name,
       content:txt,
-      type:'text'
+      type:'text',
+      created_at:new Date().toISOString()
     }]).then(function(res){
-      if(res.error) console.warn('⚠️ Message save error:',res.error);
+      if(res.error) console.error('❌ Ошибка сохранения:',res.error);
+      else console.log('✅ Сообщение сохранено');
+    }).catch(function(e){
+      console.error('❌ Error:',e);
     });
   }
 }
 
+function formatTime(ts){
+  if(!ts) return '';
+  try{
+    var d=new Date(ts);
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  }catch(e){return '';}
+}
+
+function updateAiraBadge(){
+  var b=document.getElementById('aira-badge');
+  if(!b) return;
+  if(curUser){
+    b.textContent='✓ '+curUser.name.split(' ')[0];
+    b.style.cssText='background:rgba(255,255,255,.2);border-radius:8px;padding:4px 10px;font-size:11px;color:#fff;font-weight:600';
+  }else{
+    b.textContent='🔒 Гость';
+    b.style.cssText='background:rgba(255,255,255,.1);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600';
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   🔔 NOTIFICATIONS
+═══════════════════════════════════════════════════ */
+function addNotification(data){
+  var now=new Date();
+  var tm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  notifications.unshift({id:Date.now(),from:data.from,text:data.text,time:tm,read:false});
+  if(notifications.length>30) notifications=notifications.slice(0,30);
+  updateNotificationsCount();
+  saveNotifications();
+}
+
+function saveNotifications(){
+  try{localStorage.setItem('fp_notifications',JSON.stringify(notifications));}catch(e){}
+}
+
+function updateNotificationsCount(){
+  var unread=notifications.filter(function(n){return !n.read;}).length;
+  var badge=document.getElementById('notif-badge');
+  if(badge){
+    badge.textContent=unread>9?'9+':(unread||'');
+    badge.style.display=unread>0?'inline-block':'none';
+  }
+  var mc=document.getElementById('menu-notif-count');
+  if(mc) mc.textContent=unread>0?(unread+' новых'):'нет новых';
+}
+
+function renderNotifications(){
+  var el=document.getElementById('notif-body');
+  if(!el) return;
+  if(notifications.length===0){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🔔</div><div class="empty-t">Всё спокойно</div><div class="empty-s">Уведомления появятся здесь</div></div>';
+    return;
+  }
+  el.innerHTML='<div style="font-size:18px;font-weight:800;padding:14px 0 10px">Уведомления</div>'+
+    notifications.map(function(n){
+      return '<div class="notif-item" style="'+(n.read?'':'border-left:3px solid var(--orange)')+'" onclick="markRead('+n.id+')"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>'+esc(n.from)+'</b> '+esc(n.text)+'</div><div class="notif-time">'+n.time+'</div></div></div>';
+    }).join('');
+}
+
+function markRead(id){
+  var n=notifications.find(function(x){return x.id===id;});
+  if(n){n.read=true;updateNotificationsCount();renderNotifications();saveNotifications();}
+}
+
+/* ════════════════════════════════════════════════════
+   🛠️ UTILS & NAVIGATION
+═══════════════════════════════════════════════════ */
 function updateNavVisibility(){
   var airaNav=document.getElementById('n-aira');
   var notifNav=document.getElementById('n-notif');
   var addWrap=document.getElementById('nav-plus-wrap');
   
+  // Скрываем Aira и уведомления для гостей
   if(airaNav) airaNav.style.display=curUser?'flex':'none';
   if(notifNav) notifNav.style.display=curUser?'flex':'none';
   if(addWrap) addWrap.style.display=curUser?'block':'none';
@@ -453,13 +614,9 @@ function needAuth(cb){
 }
 
 function go(id){
-  if(id==='s-aira' && !curUser){
-    toast('🔐 Войдите, чтобы общаться с коллегами');
-    openM('m-auth');
-    return;
-  }
-  if(id==='s-notif' && !curUser){
-    toast('🔐 Войдите, чтобы видеть уведомления');
+  // Блокируем доступ к Aira/уведомлениям для гостей
+  if((id==='s-aira'||id==='s-notif') && !curUser){
+    toast('🔐 Войдите, чтобы получить доступ');
     openM('m-auth');
     return;
   }
@@ -536,46 +693,4 @@ function applyLangUI(){
   var ru=document.getElementById('lo-ru'),kz=document.getElementById('lo-kz');
   if(ru) ru.classList.toggle('on',curLang==='ru');
   if(kz) kz.classList.toggle('on',curLang==='kz');
-}
-
-function addNotification(data){
-  var now=new Date();
-  var tm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  notifications.unshift({id:Date.now(),from:data.from,text:data.text,time:tm,read:false});
-  if(notifications.length>30) notifications=notifications.slice(0,30);
-  updateNotificationsCount();
-  saveNotifications();
-}
-
-function saveNotifications(){
-  try{localStorage.setItem('fp_notifications',JSON.stringify(notifications));}catch(e){}
-}
-
-function updateNotificationsCount(){
-  var unread=notifications.filter(function(n){return !n.read;}).length;
-  var badge=document.getElementById('notif-badge');
-  if(badge){
-    badge.textContent=unread>9?'9+':(unread||'');
-    badge.style.display=unread>0?'inline-block':'none';
-  }
-  var mc=document.getElementById('menu-notif-count');
-  if(mc) mc.textContent=unread>0?(unread+' новых'):'нет новых';
-}
-
-function renderNotifications(){
-  var el=document.getElementById('notif-body');
-  if(!el) return;
-  if(notifications.length===0){
-    el.innerHTML='<div class="empty"><div class="empty-ico">🔔</div><div class="empty-t">Всё спокойно</div><div class="empty-s">Уведомления появятся здесь</div></div>';
-    return;
-  }
-  el.innerHTML='<div style="font-size:18px;font-weight:800;padding:14px 0 10px">Уведомления</div>'+
-    notifications.map(function(n){
-      return '<div class="notif-item" style="'+(n.read?'':'border-left:3px solid var(--orange)')+'" onclick="markRead('+n.id+')"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>'+esc(n.from)+'</b> '+esc(n.text)+'</div><div class="notif-time">'+n.time+'</div></div></div>';
-    }).join('');
-}
-
-function markRead(id){
-  var n=notifications.find(function(x){return x.id===id;});
-  if(n){n.read=true;updateNotificationsCount();renderNotifications();saveNotifications();}
 }
