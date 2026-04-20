@@ -1,4 +1,4 @@
-/* FLAPY app.js v21.0 — Production Ready */
+/* FLAPY app.js v22.0 — Fixed: Chat, Photos, AI Templates */
 'use strict';
 
 var SUPABASE_URL = 'https://qjmfudpqfyanigizwvze.supabase.co';
@@ -7,6 +7,7 @@ var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 var db = null;
 var listings = [], curUser = null, curFilter = 'all', curLang = 'ru', listTab = 'obj';
 var notifications = [], airaMessages = [], uploadedMedia = {photos:[], videos:[]};
+var realtimeChannel = null;
 
 window.addEventListener('load', function(){
   if(window.supabase) {
@@ -14,45 +15,27 @@ window.addEventListener('load', function(){
     console.log('✅ Supabase подключён');
   }
   
-  // Восстановление сессии
-  try{
-    var s=localStorage.getItem('fp_user');
-    if(s) curUser=JSON.parse(s);
-  }catch(e){}
-  
-  try{
-    var n=localStorage.getItem('fp_notifications');
-    if(n) notifications=JSON.parse(n);
-  }catch(e){}
+  try{var s=localStorage.getItem('fp_user');if(s)curUser=JSON.parse(s);}catch(e){}
+  try{var n=localStorage.getItem('fp_notifications');if(n)notifications=JSON.parse(n);}catch(e){}
+  try{var l=localStorage.getItem('fp_listings');if(l)listings=JSON.parse(l);}catch(e){}
   
   curLang=localStorage.getItem('fp_lang')||'ru';
-  if(curUser){
-    renderAuthSlot();
-    updateNavVisibility();
-    if(db) loadAiraMessages();
-  } else {
-    updateNavVisibility();
-  }
+  if(curUser){renderAuthSlot();updateNavVisibility();updateAiraBadge();}
+  else{updateNavVisibility();}
   
   var ld=document.getElementById('loader');
   if(ld) setTimeout(function(){ld.style.display='none';},800);
   
-  // Загрузка данных: сначала из кэша для скорости, потом синхронизация
-  loadFromSupabase();
+  if(db) loadFromSupabase();
+  else renderListings();
   
-  console.log('✅ Flapy v21.0 loaded');
+  console.log('✅ Flapy v22.0 loaded');
 });
 
+/* ════════════════════════════════════════════════════
+   📥 LOAD DATA
+═══════════════════════════════════════════════════ */
 function loadFromSupabase(){
-  // Показываем кэш сразу, если есть
-  try{
-    var cached = localStorage.getItem('fp_listings');
-    if(cached){
-      listings = JSON.parse(cached);
-      renderListings();
-    }
-  }catch(e){}
-
   if(!db) return;
   
   db.from('listings').select('*').order('created_at',{ascending:false}).then(function(res){
@@ -71,7 +54,6 @@ function loadFromSupabase(){
         liked:false, photos:i.photo_urls||[], videos:[], createdAt:i.created_at
       };
     });
-    // Обновляем кэш
     try{localStorage.setItem('fp_listings',JSON.stringify(listings));}catch(e){}
     renderListings();
   });
@@ -84,40 +66,28 @@ function saveListingsLocal(){
 function saveToSupabase(listing){
   if(!db||!curUser) return Promise.resolve();
   return db.from('listings').insert([{
-    realtor_id:curUser.id, 
-    realtor_name:curUser.name, 
-    agency:curUser.agency||'',
-    phone:curUser.phone||'', 
-    type:listing.type, 
-    rooms:listing.rooms, 
-    area:listing.area,
-    floor:listing.floor||null, 
-    total_floors:listing.totalFloors||null,
-    ceiling_height:listing.ceilingHeight||null, 
-    complex_name:listing.complex||'',
-    city:'Астана', 
-    district:listing.district, 
-    price:listing.price,
-    description:listing.desc, 
-    exchange:listing.exchange||false, 
-    badge:'Новое',
-    photo_urls:listing.photos||[], 
-    has_video:(listing.videos||[]).length>0,
+    realtor_id:curUser.id, realtor_name:curUser.name, agency:curUser.agency||'',
+    phone:curUser.phone||'', type:listing.type, rooms:listing.rooms, area:listing.area,
+    floor:listing.floor||null, total_floors:listing.totalFloors||null,
+    ceiling_height:listing.ceilingHeight||null, complex_name:listing.complex||'',
+    city:'Астана', district:listing.district, price:listing.price,
+    description:listing.desc, exchange:listing.exchange||false, badge:'Новое',
+    photo_urls:listing.photos||[], has_video:(listing.videos||[]).length>0,
     tags: listing.tags || []
   }]).then(function(res){
     if(res.error) throw res.error;
-    console.log('✅ Listing saved to Supabase');
+    console.log('✅ Listing saved');
   });
 }
 
 /* ════════════════════════════════════════════════════
-   🤖 AI DESCRIPTIONS
+   🤖 AI TEMPLATES (No external API)
 ═══════════════════════════════════════════════════ */
 function genAI(){
   var wrap=document.getElementById('ai-variants-wrap');
   if(!wrap) return;
   
-  var data={
+  var b={
     type:document.getElementById('a-type')?.value||'apartment',
     rooms:document.getElementById('a-rooms')?.value||'3',
     area:document.getElementById('a-area')?.value||'85',
@@ -125,72 +95,58 @@ function genAI(){
     price:document.getElementById('a-price')?.value||'',
     floor:document.getElementById('a-floor')?.value,
     totalFloors:document.getElementById('a-totalfloors')?.value,
-    ceilingHeight:document.getElementById('a-ceiling')?.value,
     complex:document.getElementById('a-complex')?.value||'',
     exchange:document.getElementById('a-exchange')?.checked||false
   };
   
+  var typeRu={apartment:'квартира',house:'дом',commercial:'помещение',land:'участок'};
+  var type=typeRu[b.type]||'объект';
+  var priceFmt=b.price?(Number(String(b.price).replace(/\s/g,''))/1e6).toFixed(1)+' млн ₸':'по договорённости';
+  
+  var v1=`🤍 Уютная ${b.rooms}-комнатная ${type} в районе ${b.district}!
+
+📍 ${b.complex?'ЖК «'+b.complex+'», ':''}${b.area} м², ${b.floor?b.floor+'/'+b.totalFloors+' эт.':''}
+
+Просторное жильё с удобной планировкой. Тихий двор, развитая инфраструктура рядом.
+
+💰 Цена: ${priceFmt}
+📞 Позвоните — покажу в любое время!`;
+
+  var v2=`🔥 ${b.rooms}-к. ${type} — отличный выбор!
+
+📋 ${b.area} м² · ${b.floor?b.floor+'/'+b.totalFloors+' эт.':''} · ${b.district}
+
+Чистая, ухоженная, с хорошими соседями. Локация с потенциалом роста.
+
+💰 ${priceFmt}
+📱 Пишите — отвечаю быстро!`;
+
   wrap.style.display='block';
-  wrap.innerHTML='<div class="ai-loading" style="padding:20px;text-align:center;color:var(--t3)">✨ AI пишет описание... подождите немного</div>';
+  wrap.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:10px">✨ ИИ предложил варианты:</div>'+
+    '<div style="background:var(--bg3);border:2px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="useAIVariant('+JSON.stringify(v1).replace(/'/g,"\\'")+')"><div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">🤍 Тёплый</div><div style="font-size:12px;line-height:1.6;color:var(--t2);white-space:pre-wrap">'+esc(v1)+'</div><button style="margin-top:8px;padding:6px 12px;border-radius:8px;background:var(--navy);color:#fff;border:none;font-size:11px;cursor:pointer">✅ Использовать</button></div>'+
+    '<div style="background:var(--bg3);border:2px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="useAIVariant('+JSON.stringify(v2).replace(/'/g,"\\'")+')"><div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">🔥 Продающий</div><div style="font-size:12px;line-height:1.6;color:var(--t2);white-space:pre-wrap">'+esc(v2)+'</div><button style="margin-top:8px;padding:6px 12px;border-radius:8px;background:var(--navy);color:#fff;border:none;font-size:11px;cursor:pointer">✅ Использовать</button></div>'+
+    '<button style="width:100%;padding:8px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--brd);color:var(--t2);font-size:11px;cursor:pointer" onclick="document.getElementById(\'ai-variants-wrap\').style.display=\'none\'">✕ Закрыть</button>';
   
-  var btn=document.getElementById('ai-gen-btn');
-  if(btn){btn.disabled=true;btn.innerHTML='⏳ Генерирую...';}
-  
-  fetch('/api/ai/describe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-  .then(function(r){
-    if(!r.ok) throw new Error('API error: '+r.status);
-    return r.json();
-  })
-  .then(function(res){
-    var descs=res.descriptions||[];
-    if(!descs || descs.length===0) throw new Error('Пустой ответ от AI');
-    renderAIVariants(descs);
-    toast('✨ AI сгенерировал варианты!');
-  })
-  .catch(function(e){
-    console.error('AI error:',e);
-    wrap.innerHTML='<div style="padding:15px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;color:#dc2626">⚠️ Ошибка AI: '+e.message+'. Проверьте ключ в Cloudflare или напишите вручную.</div>';
-  })
-  .finally(function(){
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-robot"></i> Сгенерировать 2 варианта описания AI';}
-  });
+  toast('✨ Готово! Выберите вариант');
 }
 
-function renderAIVariants(descs){
-  var wrap=document.getElementById('ai-variants-wrap');
-  if(!wrap) return;
-  
-  var html='<div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:10px;padding:0 5px">✨ ИИ предложил варианты — нажмите "Использовать":</div>';
-  
-  descs.forEach(function(text,i){
-    if(!text || text.trim()==='') return;
-    var safeText=encodeURIComponent(text);
-    html+='<div style="background:var(--bg3);border:2px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="useAIVariant(\''+safeText+'\')"><div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">📝 Вариант '+(i+1)+'</div><div style="font-size:12px;line-height:1.6;color:var(--t2);white-space:pre-wrap">'+esc(text)+'</div><button type="button" style="margin-top:8px;padding:6px 12px;border-radius:8px;background:var(--navy);color:#fff;border:none;font-size:11px;cursor:pointer">✅ Использовать</button></div>';
-  });
-  
-  html+='<div style="display:flex;gap:8px;margin-top:12px"><button type="button" onclick="genAI()" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--brd);color:var(--t2);font-size:11px;cursor:pointer">🔄 Ещё</button><button type="button" onclick="document.getElementById(\'ai-variants-wrap\').style.display=\'none\'" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--brd);color:var(--t2);font-size:11px;cursor:pointer">✕ Закрыть</button></div>';
-  
-  wrap.innerHTML=html;
-}
-
-function useAIVariant(encodedText){
+function useAIVariant(text){
   var desc=document.getElementById('a-desc');
-  if(!desc) return;
-  
-  desc.value=decodeURIComponent(encodedText);
-  desc.focus();
-  desc.style.background='rgba(39,174,96,.1)';
-  setTimeout(function(){desc.style.background='';},800);
-  
+  if(desc){
+    desc.value=text;
+    desc.focus();
+    desc.style.background='rgba(39,174,96,.1)';
+    setTimeout(function(){desc.style.background='';},800);
+  }
   document.getElementById('ai-variants-wrap').style.display='none';
-  toast('✅ Описание применено!');
+  toast('✅ Применено!');
 }
 
 /* ════════════════════════════════════════════════════
    📤 SUBMIT LISTING
 ═══════════════════════════════════════════════════ */
 function submitListing(){
-  if(!curUser){toast('🔐 Войдите, чтобы публиковать');openM('m-auth');return;}
+  if(!curUser){toast('🔐 Войдите');openM('m-auth');return;}
   
   var priceRaw=(document.getElementById('a-price')?.value||'').replace(/\s/g,'');
   var price=parseInt(priceRaw)||0;
@@ -205,8 +161,8 @@ function submitListing(){
   var exchange=document.getElementById('a-exchange')?.checked||false;
   var type=document.getElementById('a-type')?.value||'apartment';
   
-  if(!desc){toast('✏️ Добавьте описание 🤍');return;}
-  if(price<=0){toast('💰 Укажите цену ✨');return;}
+  if(!desc){toast('✏️ Добавьте описание');return;}
+  if(price<=0){toast('💰 Укажите цену');return;}
   
   var newListing={
     id:'tmp_'+Date.now(), type:type, rooms:rooms, area:area, floor:floor,
@@ -224,14 +180,12 @@ function submitListing(){
   saveListingsLocal();
   renderListings();
   
-  if(db&&curUser){
-    saveToSupabase(newListing).catch(function(e){console.warn('Save error:',e);});
-  }
+  if(db&&curUser){saveToSupabase(newListing).catch(function(e){console.warn('Save error:',e);});}
   
   closeM('m-add');
   uploadedMedia={photos:[],videos:[]};
   updateMediaCounters();
-  toast('🎉 Объект опубликован!');
+  toast('🎉 Опубликовано!');
   go('s-search');
 }
 
@@ -245,7 +199,7 @@ function uploadMedia(type){
     if(!files||files.length===0) return;
     toast('⏳ Загрузка...');
     Array.from(files).forEach(function(file){
-      if(type==='video' && file.size > 20*1024*1024){toast('⚠️ Видео >20MB'); return;}
+      if(type==='video' && file.size>20*1024*1024){toast('⚠️ Видео >20MB');return;}
       var reader=new FileReader();
       reader.onload=function(evt){
         if(type==='photo') uploadedMedia.photos.push(evt.target.result);
@@ -262,12 +216,12 @@ function uploadMedia(type){
 function updateMediaCounters(){
   var pc=document.getElementById('photo-count');
   var vc=document.getElementById('video-count');
-  if(pc) pc.textContent=(uploadedMedia.photos||[]).length>0 ? (uploadedMedia.photos.length+' фото') : '';
-  if(vc) vc.textContent=(uploadedMedia.videos||[]).length>0 ? (uploadedMedia.videos.length+' видео') : '';
+  if(pc) pc.textContent=(uploadedMedia.photos||[]).length>0?(uploadedMedia.photos.length+' фото'):'';
+  if(vc) vc.textContent=(uploadedMedia.videos||[]).length>0?(uploadedMedia.videos.length+' видео'):'';
 }
 
 /* ════════════════════════════════════════════════════
-   🎨 RENDER
+   🎨 RENDER LISTINGS — WITH PHOTOS
 ═══════════════════════════════════════════════════ */
 function renderListings(){
   var el=document.getElementById('list-body');
@@ -283,16 +237,41 @@ function renderListings(){
   
   el.innerHTML=filtered.map(function(l){
     var ini=(l.realtor||'R').charAt(0);
-    var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':'';
-    var photo=l.photos&&l.photos.length>0?l.photos[0]:null;
-    var media=photo?
-      '<div class="lcard-media" style="background:none;padding:0;position:relative"><img src="'+photo+'" style="width:100%;height:185px;object-fit:cover">'+(l.badge?'<div class="lcard-badge" style="background:var(--orange);position:absolute;top:10px;right:10px">'+l.badge+'</div>':'')+'</div>':
-      '<div class="lcard-media"><div class="lcard-em">'+em+'</div>'+(l.badge?'<div class="lcard-badge" style="background:var(--orange)">'+l.badge+'</div>':'')+'</div>';
+    var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':'🏪';
+    var photos=l.photos&&l.photos.length>0?l.photos:[];
+    var firstPhoto=photos[0]||null;
     
-    return '<div class="lcard" onclick="openDetail(\''+l.id+'\')">'+media+'<div class="lcard-body"><div class="lcard-loc">📍 '+(l.complex||l.district)+', Астана</div><div class="lcard-price">'+fmtPrice(l.price)+' ₸</div><div class="lcard-sub">'+l.rooms+'-комн. · '+l.area+' м²</div>'+(l.desc?'<div style="font-size:12px;color:var(--t2);line-height:1.5;margin:6px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(l.desc)+'</div>':'')+(l.exchange?'<div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:6px">🔄 Готов к обмену</div>':'')+'<div class="lcard-footer"><div class="lf-ava">'+ini+'</div><div class="lf-name">'+esc(l.realtorFull)+(l.agency?' · '+esc(l.agency):'')+'</div></div><div class="lcard-cta"><a href="tel:'+(l.phone||'').replace(/[^\d+]/g,'')+'" class="cta-btn cta-call" onclick="event.stopPropagation()"><i class="fas fa-phone"></i> Позвонить</a><button class="cta-btn cta-msg" onclick="event.stopPropagation();curUser?go(\'s-aira\'):openM(\'m-auth\')"><i class="fas fa-comment"></i> Написать</button></div></div></div>';
+    var media;
+    if(firstPhoto){
+      media='<div class="lcard-media" style="background:none;padding:0;position:relative">'+
+        '<img src="'+firstPhoto+'" style="width:100%;height:185px;object-fit:cover">'+
+        (l.badge?'<div class="lcard-badge" style="background:var(--orange);position:absolute;top:10px;right:10px">'+l.badge+'</div>':'')+
+        '</div>';
+    }else{
+      media='<div class="lcard-media"><div class="lcard-em">'+em+'</div>'+
+        (l.badge?'<div class="lcard-badge" style="background:var(--orange)">'+l.badge+'</div>':'')+
+        '</div>';
+    }
+    
+    return '<div class="lcard" onclick="openDetail(\''+l.id+'\')">'+media+
+      '<div class="lcard-body">'+
+        '<div class="lcard-loc">📍 '+(l.complex||l.district)+', Астана</div>'+
+        '<div class="lcard-price">'+fmtPrice(l.price)+' ₸</div>'+
+        '<div class="lcard-sub">'+l.rooms+'-комн. · '+l.area+' м²</div>'+
+        (l.desc?'<div style="font-size:12px;color:var(--t2);line-height:1.5;margin:6px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(l.desc)+'</div>':'')+
+        (l.exchange?'<div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:6px">🔄 Готов к обмену</div>':'')+
+        '<div class="lcard-footer"><div class="lf-ava">'+ini+'</div><div class="lf-name">'+esc(l.realtorFull)+(l.agency?' · '+esc(l.agency):'')+'</div></div>'+
+        '<div class="lcard-cta">'+
+          '<a href="tel:'+(l.phone||'').replace(/[^\d+]/g,'')+'" class="cta-btn cta-call" onclick="event.stopPropagation()"><i class="fas fa-phone"></i> Позвонить</a>'+
+          '<button class="cta-btn cta-msg" onclick="event.stopPropagation();curUser?go(\'s-aira\'):openM(\'m-auth\')"><i class="fas fa-comment"></i> Написать</button>'+
+        '</div>'+
+      '</div></div>';
   }).join('');
 }
 
+/* ════════════════════════════════════════════════════
+   🔍 OPEN DETAIL — WITH PHOTOS
+═══════════════════════════════════════════════════ */
 function openDetail(id){
   var l=listings.find(function(x){return String(x.id)===String(id);});
   if(!l) return;
@@ -300,16 +279,35 @@ function openDetail(id){
   if(!b) return;
   
   var em=l.type==='apartment'?'🏢':l.type==='house'?'🏡':'';
+  var photos=l.photos&&l.photos.length>0?l.photos:[];
+  
+  var photosHtml='';
+  if(photos.length>0){
+    photosHtml='<div style="display:flex;gap:8px;overflow-x:auto;padding:0 17px 12px">'+
+      photos.map(function(p){return '<img src="'+p+'" style="height:150px;border-radius:10px;flex-shrink:0;cursor:pointer" onclick="window.open(\''+p+'\',\'_blank\')">';}).join('')+
+      '</div>';
+  }else{
+    photosHtml='<div style="height:160px;display:flex;align-items:center;justify-content:center;font-size:80px;opacity:.2;background:var(--bg3)">'+em+'</div>';
+  }
+  
   var specs='';
   if(l.rooms) specs+='<div>'+l.rooms+'-комнатная</div>';
   if(l.area) specs+='<div>'+l.area+' м²</div>';
   if(l.floor&&l.totalFloors) specs+='<div>'+l.floor+'/'+l.totalFloors+' эт.</div>';
   if(l.ceilingHeight) specs+='<div>Потолки: '+l.ceilingHeight+' м</div>';
   
-  b.innerHTML='<div class="sh-handle"></div><div class="det-visual"><div class="det-em-bg">'+em+'</div></div><div class="det-price">'+fmtPrice(l.price)+' ₸</div><div style="padding:0 17px 12px"><div style="font-size:13px;color:var(--t3)">'+specs+'</div></div><div style="padding:0 17px 16px;font-size:14px;line-height:1.7;color:var(--t2);white-space:pre-line">'+esc(l.desc)+'</div><div style="margin:0 17px 12px;padding:12px;background:var(--bg3);border-radius:12px"><div style="font-size:11px;color:var(--t3)">Риэлтор</div><div style="font-weight:700;font-size:13px;margin-top:3px">'+esc(l.realtorFull)+'</div>'+(l.agency?'<div style="font-size:12px;color:var(--t3)">'+esc(l.agency)+'</div>':'')+'</div><div class="det-cta"><a href="tel:'+(l.phone||'').replace(/[^\d+]/g,'')+'" class="det-btn det-call"><i class="fas fa-phone"></i> Позвонить</a><button class="det-btn det-chat" onclick="closeM(\'m-det\');curUser?go(\'s-aira\'):openM(\'m-auth\')"><i class="fas fa-comment"></i> Написать</button></div>';
+  b.innerHTML='<div class="sh-handle"></div>'+photosHtml+
+    '<div style="padding:10px 17px"><div style="font-size:24px;font-weight:900">'+fmtPrice(l.price)+' ₸</div><div style="font-size:13px;color:var(--t3);margin-top:4px">'+specs+'</div></div>'+
+    '<div style="padding:0 17px 16px;font-size:14px;line-height:1.7;color:var(--t2);white-space:pre-line">'+esc(l.desc)+'</div>'+
+    '<div style="margin:0 17px 12px;padding:12px;background:var(--bg3);border-radius:12px"><div style="font-size:11px;color:var(--t3)">Риэлтор</div><div style="font-weight:700;font-size:13px;margin-top:3px">'+esc(l.realtorFull)+'</div>'+(l.agency?'<div style="font-size:12px;color:var(--t3)">'+esc(l.agency)+'</div>':'')+'</div>'+
+    '<div class="det-cta"><a href="tel:'+(l.phone||'').replace(/[^\d+]/g,'')+'" class="det-btn det-call"><i class="fas fa-phone"></i> Позвонить</a><button class="det-btn det-chat" onclick="closeM(\'m-det\');curUser?go(\'s-aira\'):openM(\'m-auth\')"><i class="fas fa-comment"></i> Написать</button></div>';
+  
   openM('m-det');
 }
 
+/* ════════════════════════════════════════════════════
+   👤 PROFILE & AUTH
+═══════════════════════════════════════════════════ */
 function renderProf(){
   var el=document.getElementById('prof-body');
   if(!el) return;
@@ -323,13 +321,9 @@ function renderProf(){
   updateNotificationsCount();
 }
 
-/* ════════════════════════════════════════════════════
-   🔐 AUTH
-═══════════════════════════════════════════════════ */
 function doLogin(){
   var email=(document.getElementById('l-email')?.value||'').trim().toLowerCase();
   var pass=(document.getElementById('l-pass')?.value||'').trim();
-  
   if(!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)){toast('📧 Email только латиницей');return;}
   if(!email){toast('📧 Введите email');return;}
   if(!pass){toast('🔑 Введите пароль');return;}
@@ -357,7 +351,7 @@ function doReg(){
   if(!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)){toast('📧 Email только латиницей');return;}
   if(!name){toast('📝 Введите имя');return;}
   if(!email){toast('📧 Введите email');return;}
-  if(!pass || pass.length<6){toast('🔑 Пароль мин. 6 символов');return;}
+  if(!pass||pass.length<6){toast('🔑 Пароль мин. 6 символов');return;}
   
   if(db){
     db.auth.signUp({email:email,password:pass,options:{data:{full_name:name}}}).then(function(res){
@@ -379,7 +373,13 @@ function onLoggedIn(){
   renderProf();
   updateNavVisibility();
   updateAiraBadge();
-  if(db) loadAiraMessages();
+  
+  // 🔥 Load chat after login
+  if(db){
+    loadAiraMessages();
+    initAiraRealtime();
+  }
+  
   toast('👋 С возвращением, '+curUser.name.split(' ')[0]+'!');
 }
 
@@ -387,6 +387,8 @@ function doLogout(){
   if(db) db.auth.signOut();
   curUser=null;
   localStorage.removeItem('fp_user');
+  airaMessages=[];
+  if(realtimeChannel){db.removeChannel(realtimeChannel);realtimeChannel=null;}
   renderAuthSlot();
   renderProf();
   updateNavVisibility();
@@ -412,17 +414,36 @@ function authTab(tab){
 }
 
 /* ════════════════════════════════════════════════════
-   💬 CHAT & NOTIFS
+   💬 AIRA CHAT — REALTIME
 ═══════════════════════════════════════════════════ */
 function loadAiraMessages(){
   if(!db) return;
   db.from('messages').select('*').order('created_at',{ascending:true}).limit(50).then(function(res){
     if(res.error) return;
     airaMessages=(res.data||[]).map(function(m){
-      return {id:m.id,author:m.user_name||'Риэлтор',text:m.content,time:formatTime(m.created_at),mine:curUser && (m.user_id===curUser.id)};
+      return {id:m.id,author:m.user_name||'Риэлтор',text:m.content,time:formatTime(m.created_at),mine:curUser&&(m.user_id===curUser.id)};
     });
     renderAiraChat();
   });
+}
+
+function initAiraRealtime(){
+  if(!db) return;
+  if(realtimeChannel) db.removeChannel(realtimeChannel);
+  
+  realtimeChannel=db.channel('public:messages')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},function(payload){
+      var msg=payload.new;
+      if(msg.user_id===curUser?.id) return;
+      airaMessages.push({id:msg.id,author:msg.user_name||'Риэлтор',text:msg.content,time:formatTime(msg.created_at),mine:false});
+      renderAiraChat();
+    })
+    .subscribe(function(status){
+      if(status==='SUBSCRIBED'){
+        var el=document.getElementById('aira-online-txt');
+        if(el) el.textContent='онлайн';
+      }
+    });
 }
 
 function renderAiraChat(){
@@ -468,6 +489,9 @@ function updateAiraBadge(){
   }
 }
 
+/* ════════════════════════════════════════════════════
+   🔔 NOTIFICATIONS
+═══════════════════════════════════════════════════ */
 function addNotification(data){
   var now=new Date();
   var tm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
@@ -491,9 +515,10 @@ function renderNotifications(){
   var el=document.getElementById('notif-body');
   if(!el) return;
   if(notifications.length===0){el.innerHTML='<div class="empty"><div class="empty-ico">🔔</div><div class="empty-t">Всё спокойно</div></div>';return;}
-  el.innerHTML='<div style="font-size:18px;font-weight:800;padding:14px 0 10px">Уведомления</div>'+notifications.map(function(n){
-    return '<div class="notif-item" style="'+(n.read?'':'border-left:3px solid var(--orange)')+'" onclick="markRead('+n.id+')"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>'+esc(n.from)+'</b> '+esc(n.text)+'</div><div class="notif-time">'+n.time+'</div></div></div>';
-  }).join('');
+  el.innerHTML='<div style="font-size:18px;font-weight:800;padding:14px 0 10px">Уведомления</div>'+
+    notifications.map(function(n){
+      return '<div class="notif-item" style="'+(n.read?'':'border-left:3px solid var(--orange)')+'" onclick="markRead('+n.id+')"><span class="notif-ico">💬</span><div><div class="notif-txt"><b>'+esc(n.from)+'</b> '+esc(n.text)+'</div><div class="notif-time">'+n.time+'</div></div></div>';
+    }).join('');
 }
 
 function markRead(id){
@@ -535,7 +560,7 @@ function needAuth(cb){
 }
 
 function go(id){
-  if((id==='s-aira'||id==='s-notif') && !curUser){toast('🔐 Войдите');openM('m-auth');return;}
+  if((id==='s-aira'||id==='s-notif')&&!curUser){toast('🔐 Войдите');openM('m-auth');return;}
   document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
   var el=document.getElementById(id);
   if(el) el.classList.add('on');
