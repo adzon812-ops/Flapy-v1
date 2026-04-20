@@ -11,107 +11,54 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
 })
 
-// 🤖 GEMINI AI API
+// 🤖 GEMINI AI ENDPOINT
 app.post('/api/ai/describe', async (c) => {
   const b = await c.req.json().catch(() => ({})) as any
   const env = c.env as any
   const apiKey = env?.GEMINI_API_KEY
 
-  if (!apiKey) {
-    return c.json({ descriptions: buildFallback(b) })
-  }
+  if (!apiKey) return c.json({ error: 'GEMINI_API_KEY not set', descriptions: [] }, 500)
 
-  const prompt = buildPrompt(b)
+  const prompt = `Ты — копирайтер Flapy™. Напиши 2 варианта описания объекта недвижимости.
+ДАННЫЕ: ${JSON.stringify(b)}
+ПРАВИЛА: 
+1. Вариант 1: 🤍 Тёплый, душевный, про атмосферу.
+2. Вариант 2: 🔥 Продающий, чёткий, про выгоду и локацию.
+3. Язык: Русский. Эмодзи: 3-5 шт. Без штампов ("элитный", "премиум").
+4. Длина: 80-100 слов каждый.
+ФОРМАТ ОТВЕТА СТРОГО:
+ВАРИАНТ 1:
+[текст]
+
+ВАРИАНТ 2:
+[текст]`
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 800
-        }
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
       })
     })
 
-    if (!res.ok) throw new Error('API error ' + res.status)
+    if (!res.ok) throw new Error(`API ${res.status}`)
     const data = await res.json() as any
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    const descriptions = parseVariants(text, b)
-    return c.json({ descriptions })
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    
+    // Парсим ответ
+    const v1 = raw.split('ВАРИАНТ 2:')[0]?.replace('ВАРИАНТ 1:', '')?.trim() || ''
+    const v2 = raw.split('ВАРИАНТ 2:')[1]?.trim() || ''
+    
+    return c.json({ descriptions: [v1, v2] })
   } catch (e) {
-    console.error('Gemini error:', e)
-    return c.json({ descriptions: buildFallback(b) })
+    console.error('Gemini Error:', e)
+    return c.json({ error: String(e), descriptions: [] }, 500)
   }
 })
 
-function buildPrompt(o: any): string {
-  const typeRu: Record<string,string> = { apartment:'квартира', house:'дом', commercial:'помещение', land:'участок' }
-  const type = typeRu[o.type] || 'объект'
-  const priceFmt = o.price ? (Number(String(o.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
-  const floorInfo = o.floor && o.totalFloors ? `${o.floor}/${o.totalFloors} эт.` : ''
-  const ceilInfo = o.ceilingHeight ? `потолки ${o.ceilingHeight} м` : ''
-  const complexInfo = o.complex ? `ЖК «${o.complex}»` : ''
-
-  return `Ты — опытный риэлтор-копирайтер из Астаны. Работаешь на платформе Flapy™ — тёплом сообществе риэлторов.
-
-Напиши ДВА живых, продающих описания объекта:
-1. 🤍 ТЁПЛЫЙ: про дом, уют, атмосферу, семью
-2. 🔥 ПРОДАЮЩИЙ: про выгоду, локацию, потенциал роста
-
-ДАННЫЕ:
-• Тип: ${type}
-• Комнаты: ${o.rooms || '—'}
-• Площадь: ${o.area || '—'} м²
-• ${complexInfo ? 'ЖК: ' + complexInfo : ''}
-• ${floorInfo ? 'Этаж: ' + floorInfo : ''}
-• ${ceilInfo ? ceilInfo : ''}
-• Район: ${o.district || 'Астана'}
-• Цена: ${priceFmt}
-• Обмен: ${o.exchange ? 'готовы рассмотреть' : 'не рассматривается'}
-
-ПРАВИЛА:
-1. Эмодзи: 3-5 штук, не больше
-2. Пиши тепло, по-человечески, без штампов
-3. Используй конкретику из данных
-4. Длина: 80-120 слов каждый
-5. Завершай мягким призывом к контакту
-6. БЕЗ слов: "элитный", "премиум", "эксклюзив"
-
-ФОРМАТ ОТВЕТА (строго):
-🤍 ВАРИАНТ 1:
-[текст]
-
-🔥 ВАРИАНТ 2:
-[текст]`
-}
-
-function parseVariants(text: string, fallback: any): string[] {
-  const v1 = text.match(/🤍\s*ВАРИАНТ\s*1[:\n]([\s\S]+?)(?=🔥\s*ВАРИАНТ\s*2|$)/)?.[1]?.trim()
-  const v2 = text.match(/🔥\s*ВАРИАНТ\s*2[:\n]([\s\S]+?)$/)?.[1]?.trim()
-  return [v1 || buildFallbackText(fallback, 1), v2 || buildFallbackText(fallback, 2)]
-}
-
-function buildFallback(o: any): string[] {
-  return [buildFallbackText(o, 1), buildFallbackText(o, 2)]
-}
-
-function buildFallbackText(o: any, v: number): string {
-  const types: Record<string,string> = { apartment:'квартира', house:'дом', commercial:'помещение', land:'участок' }
-  const t = types[o.type] || 'объект'
-  const priceFmt = o.price ? (Number(String(o.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
-  const complexInfo = o.complex ? ` в ЖК «${o.complex}»` : ''
-  const floorInfo = o.floor && o.totalFloors ? `${o.floor}/${o.totalFloors} эт.` : ''
-  const ceilInfo = o.ceilingHeight ? `· потолки ${o.ceilingHeight} м` : ''
-  
-  if (v === 1) {
-    return `🤍 ${o.rooms}-комнатная ${t}${complexInfo}, ${o.area} м²\n\n📍 ${o.district || 'Астана'}${floorInfo ? ' · ' + floorInfo : ''} ${ceilInfo}\n\nПросторное жильё с удобной планировкой. Тихий двор, развитая инфраструктура рядом — всё что нужно для комфортной жизни.\n\n💰 Цена: ${priceFmt}\n📞 Позвоните — покажу в любое удобное время!`
-  }
-  return `🔥 ${o.rooms}-к. ${t}${complexInfo} — отличный выбор!\n\n📋 ${o.area} м² · ${floorInfo || 'этаж'} ${ceilInfo}\n\nЧистая, ухоженная, с хорошими соседями. Локация с потенциалом роста цены. Документы в порядке.\n\n💰 ${priceFmt}${o.exchange ? '\n🔄 Рассмотрим обмен' : ''}\n📱 Пишите — отвечаю быстро!`
-}
-
+// Эхо-роуты для совместимости фронтенда
 app.post('/api/auth/login', async (c) => c.json({ success: true }))
 app.post('/api/auth/register', async (c) => c.json({ success: true }))
 app.get('/api/listings', (c) => c.json({ listings: [] }))
@@ -128,7 +75,7 @@ return `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
-<title>Flapy™ — Ваш помощник на рынке жилья</title>
+<title>Flapy™ — Ваш умный помощник на рынке жилья</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -196,13 +143,13 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .lf-ava{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
 .lf-name{font-size:11px;font-weight:600;color:var(--t2);flex:1}
 .lcard-cta{display:flex;gap:7px;margin-top:9px}
-.cta-btn{flex:1;padding:9px 6px;border-radius:10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
-.cta-call{background:var(--navy);color:#fff}
-.cta-msg{background:var(--bg3);color:var(--t1);border:1px solid var(--brd2)}
+.cta-btn{flex:1;padding:9px 6px;border-radius:10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;text-decoration:none}
+.cta-call{background:var(--green);color:#fff}
+.cta-msg{background:var(--navy);color:#fff}
 #s-aira{display:none;background:#e5ddd5}
 [data-theme=dark] #s-aira{background:#0A0F1E}
 .chat-wrap{display:flex;flex-direction:column;height:100%}
-.chat-header{flex-shrink:0;background:var(--navy);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.chat-header{flex-shrink:0;background:var(--navy);padding:10px 14px;display:flex;align-items:center;gap:10px;color:#fff}
 [data-theme=dark] .chat-header{background:#1E1E35}
 .ch-ava{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;background:linear-gradient(135deg,var(--orange),var(--orange2))}
 .ch-name{font-size:15px;font-weight:700;color:#fff}
@@ -309,7 +256,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 <div id="loader">
   <div class="ld-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
   <div class="ld-name">Flapy<span style="font-size:10px;color:var(--orange);vertical-align:super;font-weight:700">™</span></div>
-  <div class="ld-sub">Всё для вашей работы — в одном месте 🏠</div>
+  <div class="ld-sub">Ваш умный помощник на рынке жилья</div>
   <div class="ld-bar-wrap"><div class="ld-bar"></div></div>
 </div>
 
@@ -332,11 +279,10 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 </div>
 
 <div id="main">
-
 <div id="s-search" class="scr on">
   <div class="list-header">
     <div class="lh-top">
-      <div class="lh-tagline">Рынок недвижимости Астаны 🏙️</div>
+      <div class="lh-tagline">Ваш умный помощник на рынке жилья</div>
       <div class="tab-row">
         <div class="tab-item on" id="tab-obj" onclick="setListTab('obj')">Объекты</div>
         <div class="tab-item" id="tab-exch" onclick="setListTab('exch')">Обмен</div>
@@ -382,7 +328,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 <div id="s-notif" class="scr">
   <div class="notif-wrap" id="notif-body"></div>
 </div>
-
 </div>
 
 <div id="botbar">
@@ -424,7 +369,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       </div>
       <div id="af-in">
         <label class="flabel">Email (только латиница)</label>
-        <input class="finput" type="email" id="l-email" placeholder="yourname@email.com" autocomplete="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$">
+        <input class="finput" type="email" id="l-email" placeholder="yourname@email.com" autocomplete="email">
         <label class="flabel">Пароль</label>
         <input class="finput" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
         <button class="btn-primary" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Войти</button>
@@ -435,7 +380,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <label class="flabel">Ваше имя</label>
         <input class="finput" type="text" id="r-name" placeholder="Айгерим Касымова">
         <label class="flabel">Email (только латиница и цифры)</label>
-        <input class="finput" type="email" id="r-email" placeholder="yourname@email.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$" title="Только английские буквы, цифры и стандартные символы email">
+        <input class="finput" type="email" id="r-email" placeholder="yourname@email.com">
         <label class="flabel">Телефон (WhatsApp)</label>
         <input class="finput" type="tel" id="r-phone" placeholder="+7 777 000 00 00">
         <label class="flabel">Агентство</label>
