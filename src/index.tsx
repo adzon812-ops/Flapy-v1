@@ -11,130 +11,115 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
 })
 
-// ─── HELPERS ──────────────────────────────────────────────────
-function buildPrompt(o: any): string {
-  const typeRu: Record<string,string> = {
-    apartment: 'квартира', house: 'дом/коттедж',
-    commercial: 'коммерческое помещение', land: 'земельный участок'
-  }
-  const type = typeRu[o.type] || 'объект'
-  const rawPrice = o.price ? String(o.price).replace(/\s/g,'') : ''
-  const priceFmt = rawPrice ? Number(rawPrice).toLocaleString('ru') + ' ₸' : 'по договорённости'
-
-  return `Ты — опытный риэлтор-копирайтер рынка недвижимости Астаны, Казахстан. Работаешь на платформе Flapy™ — тёплом сообществе риэлторов.
-
-Напиши ДВА живых, продающих описания объекта. Первый — эмоциональный и тёплый. Второй — деловой и конкретный. Оба — искренние, без штампов.
-
-ДАННЫЕ ОБЪЕКТА:
-• Тип: ${type}
-• Комнаты: ${o.rooms || '—'}
-• Площадь: ${o.area || '—'} м²
-• ЖК: ${o.complex || 'не указан'}
-• Этаж: ${o.floor || '—'} из ${o.totalFloors || '—'}
-• Высота потолков: ${o.ceilingHeight || '—'} м
-• Район: ${o.district || 'Астана'}
-• Цена: ${priceFmt}
-• Обмен: ${o.exchange ? 'готовы рассмотреть обмен' : 'обмен не рассматривается'}
-• Доп. инфо: ${o.extra || '—'}
-
-ПРАВИЛА:
-1. Используй эмодзи — не больше 5 на текст
-2. Пиши тепло, по-человечески, не казённо
-3. Упоминай конкретные детали из данных объекта
-4. Длина каждого: 100–160 слов
-5. Завершай мягким призывом к контакту
-
-ОТВЕТ СТРОГО В ЭТОМ ФОРМАТЕ (без лишних слов):
-ВАРИАНТ 1:
-[текст]
-
-ВАРИАНТ 2:
-[текст]`
-}
-
-function parseVariants(text: string, fallback: any): string[] {
-  const v1 = text.match(/ВАРИАНТ 1:\n([\s\S]+?)(?=\n\nВАРИАНТ 2:|$)/)?.[1]?.trim()
-  const v2 = text.match(/ВАРИАНТ 2:\n([\s\S]+?)$/)?.[1]?.trim()
-  return [v1 || buildFallback(fallback, 1), v2 || buildFallback(fallback, 2)]
-}
-
-function buildFallback(o: any, v: number): string {
-  const types: Record<string,string> = { apartment:'квартира', house:'дом', commercial:'помещение', land:'участок' }
-  const t = types[o.type] || 'объект'
-  const rawPrice = o.price ? String(o.price).replace(/\s/g,'') : ''
-  const p = rawPrice ? (Number(rawPrice)/1e6).toFixed(1)+' млн ₸' : 'по договорённости'
-  const complex = o.complex ? ` в ЖК «${o.complex}»` : ''
-  const floor = o.floor ? `${o.floor}/${o.totalFloors} этаж · ` : ''
-  const ceil = o.ceilingHeight ? `потолки ${o.ceilingHeight} м · ` : ''
-  if (v === 1) {
-    return `🏠 ${o.rooms}-комнатная ${t}, ${o.area} м²${complex}\n\n📍 ${floor}${ceil}${o.district}, Астана\n\nПросторное жильё с удобной планировкой. Развитая инфраструктура рядом — всё что нужно для комфортной жизни.\n\n💰 Цена: ${p}\n📞 Позвоните — покажу в любое удобное время!`
-  }
-  return `✨ Отличная ${o.rooms}-комнатная ${t}${complex}!\n\n📋 ${o.area} м² · ${floor}${ceil}район ${o.district}\n\nЧистая, ухоженная, с хорошими соседями. Документы в порядке.\n\n💰 ${p}${o.exchange ? '\n🔄 Рассмотрим обмен' : ''}\n📱 Пишите — отвечаю быстро!`
-}
-
-// ─── API ROUTES ───────────────────────────────────────────────
-
-// 🤖 REAL AI DESCRIPTION (calls Anthropic API via env var)
+// 🤖 GEMINI AI — Generate descriptions
 app.post('/api/ai/describe', async (c) => {
   const b = await c.req.json().catch(() => ({})) as any
   const env = c.env as any
-  const apiKey = env?.ANTHROPIC_API_KEY
+  const apiKey = env?.GEMINI_API_KEY
 
   if (!apiKey) {
-    // Fallback to templates if key not set
-    return c.json({ descriptions: [buildFallback(b, 1), buildFallback(b, 2)] })
+    return c.json({ descriptions: buildFallback(b) })
   }
 
+  const prompt = buildPrompt(b)
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', // fast + cheap for descriptions
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: buildPrompt(b) }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 800
+        }
       })
     })
 
     if (!res.ok) throw new Error('API error ' + res.status)
     const data = await res.json() as any
-    const text = data.content?.[0]?.text || ''
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
     const descriptions = parseVariants(text, b)
     return c.json({ descriptions })
   } catch (e) {
-    console.error('AI describe error:', e)
-    return c.json({ descriptions: [buildFallback(b, 1), buildFallback(b, 2)] })
+    console.error('Gemini error:', e)
+    return c.json({ descriptions: buildFallback(b) })
   }
 })
 
-// 🔐 AUTH — clean, no test hints
-app.post('/api/auth/login', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  const email = (b.email || '').trim().toLowerCase()
-  if (!email) return c.json({ success: false, error: 'Email обязателен' }, 400)
-  // Actual auth happens in app.js via Supabase client
-  // This endpoint just echoes for compatibility
-  return c.json({ success: true })
-})
+function buildPrompt(o: any): string {
+  const typeRu: Record<string,string> = { apartment:'квартира', house:'дом', commercial:'помещение', land:'участок' }
+  const type = typeRu[o.type] || 'объект'
+  const priceFmt = o.price ? (Number(String(o.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
+  const floorInfo = o.floor && o.totalFloors ? `${o.floor}/${o.totalFloors} эт.` : ''
+  const ceilInfo = o.ceilingHeight ? `потолки ${o.ceilingHeight} м` : ''
+  const complexInfo = o.complex ? `ЖК «${o.complex}»` : ''
 
-app.post('/api/auth/register', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  return c.json({ success: true })
-})
+  return `Ты — опытный риэлтор-копирайтер из Астаны. Работаешь на платформе Flapy™ — тёплом сообществе риэлторов.
 
-app.get('/api/listings', (c) => c.json({ listings: [] })) // served from Supabase now
+Напиши ДВА живых, продающих описания объекта:
+1. 🤍 ТЁПЛЫЙ: про дом, уют, атмосферу, семью
+2. 🔥 ПРОДАЮЩИЙ: про выгоду, локацию, потенциал роста
+
+ДАННЫЕ:
+• Тип: ${type}
+• Комнаты: ${o.rooms || '—'}
+• Площадь: ${o.area || '—'} м²
+• ${complexInfo ? 'ЖК: ' + complexInfo : ''}
+• ${floorInfo ? 'Этаж: ' + floorInfo : ''}
+• ${ceilInfo ? ceilInfo : ''}
+• Район: ${o.district || 'Астана'}
+• Цена: ${priceFmt}
+• Обмен: ${o.exchange ? 'готовы рассмотреть' : 'не рассматривается'}
+
+ПРАВИЛА:
+1. Эмодзи: 3-5 штук, не больше
+2. Пиши тепло, по-человечески, без штампов
+3. Используй конкретику из данных
+4. Длина: 80-120 слов каждый
+5. Завершай мягким призывом к контакту
+6. БЕЗ слов: "элитный", "премиум", "эксклюзив"
+
+ФОРМАТ ОТВЕТА (строго):
+🤍 ВАРИАНТ 1:
+[текст]
+
+🔥 ВАРИАНТ 2:
+[текст]`
+}
+
+function parseVariants(text: string, fallback: any): string[] {
+  const v1 = text.match(/🤍\s*ВАРИАНТ\s*1[:\n]([\s\S]+?)(?=🔥\s*ВАРИАНТ\s*2|$)/)?.[1]?.trim()
+  const v2 = text.match(/🔥\s*ВАРИАНТ\s*2[:\n]([\s\S]+?)$/)?.[1]?.trim()
+  return [v1 || buildFallbackText(fallback, 1), v2 || buildFallbackText(fallback, 2)]
+}
+
+function buildFallback(o: any): string[] {
+  return [buildFallbackText(o, 1), buildFallbackText(o, 2)]
+}
+
+function buildFallbackText(o: any, v: number): string {
+  const types: Record<string,string> = { apartment:'квартира', house:'дом', commercial:'помещение', land:'участок' }
+  const t = types[o.type] || 'объект'
+  const priceFmt = o.price ? (Number(String(o.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
+  const complexInfo = o.complex ? ` в ЖК «${o.complex}»` : ''
+  const floorInfo = o.floor && o.totalFloors ? `${o.floor}/${o.totalFloors} эт.` : ''
+  const ceilInfo = o.ceilingHeight ? `· потолки ${o.ceilingHeight} м` : ''
+  
+  if (v === 1) {
+    return `🤍 ${o.rooms}-комнатная ${t}${complexInfo}, ${o.area} м²\n\n📍 ${o.district || 'Астана'}${floorInfo ? ' · ' + floorInfo : ''} ${ceilInfo}\n\nПросторное жильё с удобной планировкой. Тихий двор, развитая инфраструктура рядом — всё что нужно для комфортной жизни.\n\n💰 Цена: ${priceFmt}\n📞 Позвоните — покажу в любое удобное время!`
+  }
+  return `🔥 ${o.rooms}-к. ${t}${complexInfo} — отличный выбор!\n\n📋 ${o.area} м² · ${floorInfo || 'этаж'} ${ceilInfo}\n\nЧистая, ухоженная, с хорошими соседями. Локация с потенциалом роста цены. Документы в порядке.\n\n💰 ${priceFmt}${o.exchange ? '\n🔄 Рассмотрим обмен' : ''}\n📱 Пишите — отвечаю быстро!`
+}
+
+// 🔐 Auth endpoints (echo for compatibility)
+app.post('/api/auth/login', async (c) => c.json({ success: true }))
+app.post('/api/auth/register', async (c) => c.json({ success: true }))
+app.get('/api/listings', (c) => c.json({ listings: [] }))
 app.get('/api/realtors', (c) => c.json({ realtors: [] }))
 app.get('/api/calendar', (c) => c.json({ events: [] }))
+app.post('/api/chat/aira', async (c) => c.json({ success: true }))
 
-app.post('/api/chat/aira', async (c) => {
-  return c.json({ success: true })
-})
-
-// ─── MAIN HTML ────────────────────────────────────────────────
 app.get('/', (c) => c.html(getHTML()))
 
 function getHTML(): string {
@@ -147,7 +132,6 @@ return `<!DOCTYPE html>
 <title>Flapy™ — Ваш помощник на рынке жилья</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-<!-- SUPABASE JS CLIENT -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--white:#FFFFFF;--bg:#F5F5F7;--bg2:#FFFFFF;--bg3:#F0F0F5;--navy:#1E2D5A;--navy2:#2E4A85;--orange:#F47B20;--orange2:#FF9A3C;--green:#27AE60;--red:#E74C3C;--purple:#9B59B6;--t1:#1A1A2E;--t2:#6B7280;--t3:#9CA3AF;--brd:#E5E7EB;--brd2:#D1D5DB;--sh:0 1px 4px rgba(0,0,0,.06),0 2px 10px rgba(0,0,0,.05);--sh2:0 4px 20px rgba(0,0,0,.1);--nav-h:56px;--bot-h:64px;--r:14px;--max:480px}
@@ -169,12 +153,10 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .ld-bar{height:100%;background:linear-gradient(90deg,var(--navy),var(--orange));border-radius:2px;animation:ldA 1.4s ease forwards}
 @keyframes ldA{from{width:0}to{width:100%}}
 #topbar{position:absolute;top:0;left:0;right:0;height:var(--nav-h);z-index:50;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 14px;gap:10px}
-.logo-row{display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;-webkit-user-select:none;user-select:none}
+.logo-row{display:flex;align-items:center;gap:8px;flex:1}
 .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .logo-txt{font-size:18px;font-weight:900;color:var(--navy);letter-spacing:-.5px}
 .logo-tag{font-size:10px;color:var(--orange);vertical-align:super;font-weight:700}
-/* Hidden admin dot — only visible to admin */
-#admin-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);display:none;cursor:pointer;margin-left:2px}
 .top-right{display:flex;align-items:center;gap:7px;position:relative}
 .lang-sw{display:flex;align-items:center;background:var(--bg3);border-radius:8px;padding:2px;border:1px solid var(--brd)}
 .lo{padding:3px 7px;border-radius:6px;font-size:11px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .15s}
@@ -218,8 +200,6 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .cta-btn{flex:1;padding:9px 6px;border-radius:10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
 .cta-call{background:var(--navy);color:#fff}
 .cta-msg{background:var(--bg3);color:var(--t1);border:1px solid var(--brd2)}
-
-/* AIRA CHAT — WhatsApp style */
 #s-aira{display:none;background:#e5ddd5}
 [data-theme=dark] #s-aira{background:#0A0F1E}
 .chat-wrap{display:flex;flex-direction:column;height:100%}
@@ -240,41 +220,27 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .msg-wrap.me .bubble{background:#dcf8c6;color:#1a1a1a;border-radius:12px 3px 12px 12px}
 [data-theme=dark] .msg-wrap.me .bubble{background:var(--navy);color:#fff}
 .m-ts{font-size:10px;color:var(--t3);margin-top:3px;padding-right:2px}
-.bubble-listing{background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:9px 11px;margin-top:6px;cursor:pointer;max-width:260px}
-.bl-price{font-size:15px;font-weight:800;color:var(--navy)}
-.bl-sub{font-size:11px;color:var(--t3);margin-top:2px}
 .chat-input-row{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:8px 12px;background:var(--bg2);border-top:1px solid var(--brd)}
 .ci{flex:1;min-height:40px;max-height:88px;padding:10px 16px;border-radius:22px;border:1.5px solid var(--brd2);background:var(--white);font-size:14px;resize:none;line-height:1.4;color:var(--t1)}
 .ci::placeholder{color:var(--t3)}
 .send-btn{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:var(--navy);color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.2)}
-.chat-date-sep{text-align:center;font-size:11px;color:var(--t3);padding:8px;background:rgba(0,0,0,.05);border-radius:10px;margin:8px auto;width:fit-content;padding:4px 12px}
-
-/* PROFILE */
 .prof-wrap{padding:13px}
 .prof-hero{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:16px;padding:18px;margin-bottom:14px}
 .ph-ava{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;margin-bottom:9px}
 .ph-name{font-size:17px;font-weight:800;color:#fff}
 .ph-tag{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
-.ph-stats{display:flex;gap:16px;margin-top:12px}
-.ph-stat{text-align:center}
-.ph-val{font-size:18px;font-weight:800;color:#fff}
-.ph-lbl{font-size:10px;color:rgba(255,255,255,.6);margin-top:2px}
 .menu-sec{margin-bottom:16px}
 .menu-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
 .menu-item{display:flex;align-items:center;gap:11px;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:12px;margin-bottom:7px;cursor:pointer;box-shadow:var(--sh)}
 .menu-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .menu-name{font-size:13px;font-weight:600}
 .menu-sub{font-size:11px;color:var(--t3);margin-top:1px}
-
-/* NOTIFICATIONS */
 .notif-wrap{padding:13px}
 .notif-item{display:flex;gap:10px;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:12px;margin-bottom:8px;box-shadow:var(--sh);cursor:pointer}
 .notif-ico{font-size:20px;flex-shrink:0;margin-top:1px}
 .notif-txt{font-size:12px;line-height:1.55;color:var(--t2)}
 .notif-txt b{color:var(--t1)}
 .notif-time{font-size:10px;color:var(--t3);margin-top:3px}
-
-/* BOTTOM NAV */
 #botbar{position:absolute;bottom:0;left:0;right:0;height:var(--bot-h);z-index:50;background:var(--bg2);border-top:1px solid var(--brd);display:flex;align-items:center;padding:0 8px 6px}
 .nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--t3);padding:6px 2px;border-radius:10px;position:relative;transition:color .15s}
 .nav-svg{width:22px;height:22px;transition:transform .15s;flex-shrink:0}
@@ -285,8 +251,6 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .nav-plus{width:48px;height:48px;border-radius:14px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(30,45,90,.3);cursor:pointer;transition:transform .15s}
 [data-theme=dark] .nav-plus{background:var(--orange)}
 .nav-plus:active{transform:scale(1.05)}
-
-/* OVERLAYS & SHEETS */
 .overlay{position:absolute;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
 .overlay.on{opacity:1;pointer-events:all}
 .sheet{width:100%;max-height:92%;background:var(--bg2);border-radius:20px 20px 0 0;overflow-y:auto;padding-bottom:20px;transform:translateY(16px);transition:transform .22s}
@@ -328,21 +292,14 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .empty-s{font-size:12px;color:var(--t3)}
 #toast{position:absolute;bottom:78px;left:50%;transform:translateX(-50%) translateY(6px);background:rgba(30,45,90,.92);color:#fff;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:600;white-space:nowrap;z-index:600;opacity:0;transition:all .2s;pointer-events:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* ADMIN PANEL */
-#admin-overlay{position:absolute;inset:0;z-index:500;background:var(--bg2);overflow-y:auto;display:none}
-#admin-overlay.on{display:block}
-.adm-header{background:var(--navy);padding:14px 16px;display:flex;align-items:center;gap:10px;color:#fff}
-.adm-title{font-size:16px;font-weight:800;flex:1}
-.adm-close{font-size:20px;cursor:pointer;color:rgba(255,255,255,.7)}
-.adm-tabs{display:flex;background:var(--bg3);border-bottom:1px solid var(--brd)}
-.adm-tab{flex:1;padding:10px;text-align:center;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent}
-.adm-tab.on{color:var(--navy);border-color:var(--navy)}
-.adm-section{padding:12px}
-.adm-row{background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px}
-.adm-row b{font-size:13px;color:var(--t1)}
-.adm-row small{color:var(--t3)}
-
+.det-visual{height:200px;position:relative;background:linear-gradient(135deg,#EEF0F6,#E0E3EE);display:flex;align-items:center;justify-content:center}
+.det-em-bg{font-size:80px;opacity:.25}
+.det-price{font-size:23px;font-weight:900;padding:8px 17px 4px}
+.det-cta{display:flex;gap:8px;padding:0 17px 17px}
+.det-btn{flex:1;padding:12px;border-radius:12px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.det-call{background:var(--green)}
+.det-chat{background:var(--navy)}
+[data-theme=dark] .det-chat{background:var(--orange)}
 .su{animation:suIn .25s ease}
 @keyframes suIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 </style>
@@ -350,7 +307,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 <body>
 <div id="app-shell"><div id="app-wrap">
 
-<!-- LOADER -->
 <div id="loader">
   <div class="ld-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
   <div class="ld-name">Flapy<span style="font-size:10px;color:var(--orange);vertical-align:super;font-weight:700">™</span></div>
@@ -358,12 +314,10 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   <div class="ld-bar-wrap"><div class="ld-bar"></div></div>
 </div>
 
-<!-- TOPBAR -->
 <div id="topbar">
-  <div class="logo-row" id="logo-row">
+  <div class="logo-row">
     <div class="logo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
     <div class="logo-txt">Flapy<span class="logo-tag">™</span></div>
-    <div id="admin-dot" onclick="toggleAdminPanel()" title=""></div>
   </div>
   <div class="top-right">
     <div class="lang-sw">
@@ -378,10 +332,8 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- MAIN -->
 <div id="main">
 
-<!-- ОБЪЕКТЫ -->
 <div id="s-search" class="scr on">
   <div class="list-header">
     <div class="lh-top">
@@ -402,7 +354,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   <div class="list-body" id="list-body"></div>
 </div>
 
-<!-- AIRA CHAT -->
 <div id="s-aira" class="scr">
   <div class="chat-wrap">
     <div class="chat-header">
@@ -414,10 +365,9 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       <div id="aira-badge" style="background:rgba(255,255,255,.15);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.85);font-weight:600">🔒 Гость</div>
     </div>
     <div class="chat-body" id="aira-msgs">
-      <div class="chat-date-sep">Добро пожаловать в Aira 💬</div>
       <div class="msg-wrap other">
         <div class="msg-author">Flapy™</div>
-        <div class="bubble">Привет! Здесь риэлторы Астаны делятся объектами, договариваются о совместных сделках и помогают друг другу 🤝 Войдите, чтобы написать!</div>
+        <div class="bubble">Привет! Здесь риэлторы Астаны делятся объектами, договариваются о совместных сделках и помогают друг другу 🤝</div>
         <div class="m-ts">сейчас</div>
       </div>
     </div>
@@ -428,23 +378,20 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- ПРОФИЛЬ -->
 <div id="s-prof" class="scr"><div class="prof-wrap" id="prof-body"></div></div>
 
-<!-- УВЕДОМЛЕНИЯ -->
 <div id="s-notif" class="scr">
   <div class="notif-wrap" id="notif-body"></div>
 </div>
 
-</div><!-- /main -->
+</div>
 
-<!-- BOTTOM NAV -->
 <div id="botbar">
   <div class="nav-it on" id="n-search" onclick="go('s-search');nav(this)">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
     <span>Объекты</span>
   </div>
-  <div class="nav-it" id="n-aira" onclick="go('s-aira');nav(this)">
+  <div class="nav-it" id="n-aira" onclick="go('s-aira');nav(this)" style="display:none">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     <span>Aira</span>
   </div>
@@ -453,7 +400,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>
   </div>
-  <div class="nav-it" id="n-notif" onclick="go('s-notif');nav(this)">
+  <div class="nav-it" id="n-notif" onclick="go('s-notif');nav(this)" style="display:none">
     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
     <span>Уведомления</span>
   </div>
@@ -463,9 +410,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- MODALS -->
-
-<!-- ВХОД / РЕГИСТРАЦИЯ -->
 <div class="overlay" id="m-auth" onclick="closeOvl(event,'m-auth')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -493,7 +437,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <input class="finput" type="text" id="r-name" placeholder="Айгерим Касымова">
         <label class="flabel">Email</label>
         <input class="finput" type="email" id="r-email" placeholder="ваш@email.com">
-        <label class="flabel">Телефон</label>
+        <label class="flabel">Телефон (WhatsApp)</label>
         <input class="finput" type="tel" id="r-phone" placeholder="+7 777 000 00 00">
         <label class="flabel">Агентство</label>
         <select class="finput" id="r-agency">
@@ -509,7 +453,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- ДОБАВИТЬ ОБЪЕКТ -->
 <div class="overlay" id="m-add" onclick="closeOvl(event,'m-add')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -603,12 +546,10 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- ДЕТАЛИ ОБЪЕКТА -->
 <div class="overlay" id="m-det" onclick="closeOvl(event,'m-det')">
   <div class="sheet" id="m-det-body"></div>
 </div>
 
-<!-- МЕНЮ -->
 <div class="overlay" id="m-more" onclick="closeOvl(event,'m-more')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -638,24 +579,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
   </div>
 </div>
 
-<!-- ADMIN PANEL (hidden) -->
-<div id="admin-overlay">
-  <div class="adm-header">
-    <div style="font-size:20px">⚙️</div>
-    <div class="adm-title">Flapy Admin</div>
-    <div class="adm-close" onclick="toggleAdminPanel()">✕</div>
-  </div>
-  <div class="adm-tabs">
-    <div class="adm-tab on" onclick="admTab(this,'adm-users')">Пользователи</div>
-    <div class="adm-tab" onclick="admTab(this,'adm-listings')">Объекты</div>
-    <div class="adm-tab" onclick="admTab(this,'adm-msgs')">Сообщения</div>
-  </div>
-  <div id="adm-users" class="adm-section"></div>
-  <div id="adm-listings" class="adm-section" style="display:none"></div>
-  <div id="adm-msgs" class="adm-section" style="display:none"></div>
-</div>
-
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script src="/static/app.js"></script>
