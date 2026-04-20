@@ -11,96 +11,37 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
 })
 
-// 🤖 GEMINI AI ENDPOINT — ИСПРАВЛЕННЫЙ
+// 🤖 AI через ШАБЛОНЫ (без внешних API!)
 app.post('/api/ai/describe', async (c) => {
-  try {
-    const b = await c.req.json().catch(() => ({})) as any
-    const env = c.env as any
-    const apiKey = env?.GEMINI_API_KEY
-
-    if (!apiKey) {
-      return c.json({ error: 'GEMINI_API_KEY not found', descriptions: [] }, 500)
-    }
-
-    const typeRu: Record<string,string> = { 
-      apartment:'квартира', 
-      house:'дом', 
-      commercial:'коммерческое помещение', 
-      land:'участок' 
-    }
-    const type = typeRu[b.type] || 'объект'
-    const priceFmt = b.price ? (Number(String(b.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
-
-    const prompt = `Ты — опытный риэлтор-копирайтер из Астаны. Работаешь на платформе Flapy™.
-
-Напиши ДВА варианта описания объекта:
-1. 🤍 ТЁПЛЫЙ: про дом, уют, атмосферу, семью
-2. 🔥 ПРОДАЮЩИЙ: про выгоду, локацию, потенциал
-
-ДАННЫЕ:
-• Тип: ${type}
-• Комнаты: ${b.rooms || '—'}
-• Площадь: ${b.area || '—'} м²
-• ЖК: ${b.complex || 'не указан'}
-• Этаж: ${b.floor || '—'} из ${b.totalFloors || '—'}
-• Район: ${b.district || 'Астана'}
-• Цена: ${priceFmt}
-• Обмен: ${b.exchange ? 'готовы рассмотреть' : 'не рассматривается'}
-
-ПРАВИЛА:
-1. Эмодзи: 3-5 штук, не больше
-2. Пиши тепло, по-человечески, без штампов
-3. Используй конкретику из данных
-4. Длина: 80-120 слов каждый
-5. Завершай мягким призывом к контакту
-6. БЕЗ слов: "элитный", "премиум", "эксклюзив"
-
-ОТВЕТ СТРОГО В ФОРМАТЕ:
-ВАРИАНТ 1:
-[текст]
-
-ВАРИАНТ 2:
-[текст]`
-
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1000
-        }
-      })
-    })
-
-    if (!res.ok) {
-      const errorText = await res.text()
-      console.error('Gemini API error:', res.status, errorText)
-      return c.json({ error: `API error ${res.status}: ${errorText}`, descriptions: [] }, 500)
-    }
-
-    const data = await res.json() as any
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    
-    // Парсим ответ
-    const v1Match = text.match(/ВАРИАНТ\s*1[:\n]([\s\S]+?)(?=ВАРИАНТ\s*2|$)/)
-    const v2Match = text.match(/ВАРИАНТ\s*2[:\n]([\s\S]+?)$/)
-    
-    const v1 = v1Match ? v1Match[1].trim() : 'Ошибка генерации варианта 1'
-    const v2 = v2Match ? v2Match[1].trim() : 'Ошибка генерации варианта 2'
-    
-    return c.json({ descriptions: [v1, v2] })
-  } catch (e) {
-    console.error('AI endpoint error:', e)
-    return c.json({ error: String(e), descriptions: [] }, 500)
+  const b = await c.req.json().catch(() => ({})) as any
+  
+  const typeRu: Record<string,string> = { 
+    apartment:'квартира', house:'дом', commercial:'помещение', land:'участок' 
   }
+  const type = typeRu[b.type] || 'объект'
+  const priceFmt = b.price ? (Number(String(b.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
+  
+  const v1 = `🤍 Уютная ${b.rooms}-комнатная ${type} в районе ${b.district || 'Астаны'}!
+
+📍 ${b.complex ? 'ЖК «' + b.complex + '», ' : ''}${b.area} м², ${b.floor ? b.floor + '/' + b.totalFloors + ' эт.' : ''}
+
+Просторное жильё с удобной планировкой. Тихий двор, развитая инфраструктура рядом — всё что нужно для комфортной жизни.
+
+💰 Цена: ${priceFmt}
+📞 Позвоните — покажу в любое удобное время!`
+
+  const v2 = `🔥 ${b.rooms}-к. ${type} — отличный выбор!
+
+📋 ${b.area} м² · ${b.floor ? b.floor + '/' + b.totalFloors + ' эт.' : ''} · ${b.district || 'Астана'}
+
+Чистая, ухоженная, с хорошими соседями. Локация с потенциалом роста цены. Документы в порядке.
+
+💰 ${priceFmt}
+📱 Пишите — отвечаю быстро!`
+
+  return c.json({ descriptions: [v1, v2] })
 })
 
-// Эхо-роуты для совместимости
 app.post('/api/auth/login', async (c) => c.json({ success: true }))
 app.post('/api/auth/register', async (c) => c.json({ success: true }))
 app.get('/api/listings', (c) => c.json({ listings: [] }))
@@ -249,7 +190,7 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .flabel{font-size:11px;font-weight:600;color:var(--t3);margin-bottom:4px;display:block}
 .finput{width:100%;padding:10px 13px;border-radius:10px;background:var(--bg3);border:1.5px solid var(--brd);font-size:13px;margin-bottom:11px;color:var(--t1);transition:border-color .15s}
 .finput:focus{border-color:var(--navy)}
-select.finput{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239CA3AF'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:var(--bg3);padding-right:28px}
+select.finput{appearance:none;cursor:pointer;background-image:url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239CA3AF'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:var(--bg3);padding-right:28px}
 textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .form-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
