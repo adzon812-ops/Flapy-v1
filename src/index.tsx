@@ -11,54 +11,96 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
 })
 
-// 🤖 GEMINI AI ENDPOINT
+// 🤖 GEMINI AI ENDPOINT — ИСПРАВЛЕННЫЙ
 app.post('/api/ai/describe', async (c) => {
-  const b = await c.req.json().catch(() => ({})) as any
-  const env = c.env as any
-  const apiKey = env?.GEMINI_API_KEY
+  try {
+    const b = await c.req.json().catch(() => ({})) as any
+    const env = c.env as any
+    const apiKey = env?.GEMINI_API_KEY
 
-  if (!apiKey) return c.json({ error: 'GEMINI_API_KEY not set', descriptions: [] }, 500)
+    if (!apiKey) {
+      return c.json({ error: 'GEMINI_API_KEY not found', descriptions: [] }, 500)
+    }
 
-  const prompt = `Ты — копирайтер Flapy™. Напиши 2 варианта описания объекта недвижимости.
-ДАННЫЕ: ${JSON.stringify(b)}
-ПРАВИЛА: 
-1. Вариант 1: 🤍 Тёплый, душевный, про атмосферу.
-2. Вариант 2: 🔥 Продающий, чёткий, про выгоду и локацию.
-3. Язык: Русский. Эмодзи: 3-5 шт. Без штампов ("элитный", "премиум").
-4. Длина: 80-100 слов каждый.
-ФОРМАТ ОТВЕТА СТРОГО:
+    const typeRu: Record<string,string> = { 
+      apartment:'квартира', 
+      house:'дом', 
+      commercial:'коммерческое помещение', 
+      land:'участок' 
+    }
+    const type = typeRu[b.type] || 'объект'
+    const priceFmt = b.price ? (Number(String(b.price).replace(/\s/g,''))/1e6).toFixed(1) + ' млн ₸' : 'по договорённости'
+
+    const prompt = `Ты — опытный риэлтор-копирайтер из Астаны. Работаешь на платформе Flapy™.
+
+Напиши ДВА варианта описания объекта:
+1. 🤍 ТЁПЛЫЙ: про дом, уют, атмосферу, семью
+2. 🔥 ПРОДАЮЩИЙ: про выгоду, локацию, потенциал
+
+ДАННЫЕ:
+• Тип: ${type}
+• Комнаты: ${b.rooms || '—'}
+• Площадь: ${b.area || '—'} м²
+• ЖК: ${b.complex || 'не указан'}
+• Этаж: ${b.floor || '—'} из ${b.totalFloors || '—'}
+• Район: ${b.district || 'Астана'}
+• Цена: ${priceFmt}
+• Обмен: ${b.exchange ? 'готовы рассмотреть' : 'не рассматривается'}
+
+ПРАВИЛА:
+1. Эмодзи: 3-5 штук, не больше
+2. Пиши тепло, по-человечески, без штампов
+3. Используй конкретику из данных
+4. Длина: 80-120 слов каждый
+5. Завершай мягким призывом к контакту
+6. БЕЗ слов: "элитный", "премиум", "эксклюзив"
+
+ОТВЕТ СТРОГО В ФОРМАТЕ:
 ВАРИАНТ 1:
 [текст]
 
 ВАРИАНТ 2:
 [текст]`
 
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000
+        }
       })
     })
 
-    if (!res.ok) throw new Error(`API ${res.status}`)
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('Gemini API error:', res.status, errorText)
+      return c.json({ error: `API error ${res.status}: ${errorText}`, descriptions: [] }, 500)
+    }
+
     const data = await res.json() as any
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
     
     // Парсим ответ
-    const v1 = raw.split('ВАРИАНТ 2:')[0]?.replace('ВАРИАНТ 1:', '')?.trim() || ''
-    const v2 = raw.split('ВАРИАНТ 2:')[1]?.trim() || ''
+    const v1Match = text.match(/ВАРИАНТ\s*1[:\n]([\s\S]+?)(?=ВАРИАНТ\s*2|$)/)
+    const v2Match = text.match(/ВАРИАНТ\s*2[:\n]([\s\S]+?)$/)
+    
+    const v1 = v1Match ? v1Match[1].trim() : 'Ошибка генерации варианта 1'
+    const v2 = v2Match ? v2Match[1].trim() : 'Ошибка генерации варианта 2'
     
     return c.json({ descriptions: [v1, v2] })
   } catch (e) {
-    console.error('Gemini Error:', e)
+    console.error('AI endpoint error:', e)
     return c.json({ error: String(e), descriptions: [] }, 500)
   }
 })
 
-// Эхо-роуты для совместимости фронтенда
+// Эхо-роуты для совместимости
 app.post('/api/auth/login', async (c) => c.json({ success: true }))
 app.post('/api/auth/register', async (c) => c.json({ success: true }))
 app.get('/api/listings', (c) => c.json({ listings: [] }))
