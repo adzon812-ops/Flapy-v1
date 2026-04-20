@@ -8,7 +8,7 @@ app.use('/static/*', serveStatic({ root: './' }))
 
 app.get('/favicon.ico', (c) => {
   c.header('Content-Type', 'image/svg+xml')
-  return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
+  return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 21v-6h6v6" fill="white"/></svg>')
 })
 
 // 🤖 AI через ШАБЛОНЫ (без внешних API!)
@@ -190,7 +190,7 @@ input,textarea,select{font-family:inherit;outline:none;color:var(--t1);backgroun
 .flabel{font-size:11px;font-weight:600;color:var(--t3);margin-bottom:4px;display:block}
 .finput{width:100%;padding:10px 13px;border-radius:10px;background:var(--bg3);border:1.5px solid var(--brd);font-size:13px;margin-bottom:11px;color:var(--t1);transition:border-color .15s}
 .finput:focus{border-color:var(--navy)}
-select.finput{appearance:none;cursor:pointer;background-image:url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239CA3AF'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:var(--bg3);padding-right:28px}
+select.finput{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239CA3AF'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:var(--bg3);padding-right:28px}
 textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .form-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
