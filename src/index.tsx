@@ -11,7 +11,7 @@ app.get('/favicon.ico', (c) => {
   return c.body('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1E2D5A"/><path d="M6 16L16 8l10 8v9H6z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 25v-7h8v7" fill="white"/></svg>')
 })
 
-// 🤖 GEMINI AI — Generate descriptions
+// 🤖 GEMINI AI API
 app.post('/api/ai/describe', async (c) => {
   const b = await c.req.json().catch(() => ({})) as any
   const env = c.env as any
@@ -112,7 +112,6 @@ function buildFallbackText(o: any, v: number): string {
   return `🔥 ${o.rooms}-к. ${t}${complexInfo} — отличный выбор!\n\n📋 ${o.area} м² · ${floorInfo || 'этаж'} ${ceilInfo}\n\nЧистая, ухоженная, с хорошими соседями. Локация с потенциалом роста цены. Документы в порядке.\n\n💰 ${priceFmt}${o.exchange ? '\n🔄 Рассмотрим обмен' : ''}\n📱 Пишите — отвечаю быстро!`
 }
 
-// 🔐 Auth endpoints (echo for compatibility)
 app.post('/api/auth/login', async (c) => c.json({ success: true }))
 app.post('/api/auth/register', async (c) => c.json({ success: true }))
 app.get('/api/listings', (c) => c.json({ listings: [] }))
@@ -424,8 +423,8 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <div class="tsw" id="at-up" onclick="authTab('up')">Зарегистрироваться</div>
       </div>
       <div id="af-in">
-        <label class="flabel">Email</label>
-        <input class="finput" type="email" id="l-email" placeholder="ваш@email.com" autocomplete="email">
+        <label class="flabel">Email (только латиница)</label>
+        <input class="finput" type="email" id="l-email" placeholder="yourname@email.com" autocomplete="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$">
         <label class="flabel">Пароль</label>
         <input class="finput" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
         <button class="btn-primary" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Войти</button>
@@ -435,8 +434,8 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
         <div class="info-box"><span>✨</span><span>Добро пожаловать в семью риэлторов Flapy! После регистрации вы сможете добавлять объекты и общаться с коллегами.</span></div>
         <label class="flabel">Ваше имя</label>
         <input class="finput" type="text" id="r-name" placeholder="Айгерим Касымова">
-        <label class="flabel">Email</label>
-        <input class="finput" type="email" id="r-email" placeholder="ваш@email.com">
+        <label class="flabel">Email (только латиница и цифры)</label>
+        <input class="finput" type="email" id="r-email" placeholder="yourname@email.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$" title="Только английские буквы, цифры и стандартные символы email">
         <label class="flabel">Телефон (WhatsApp)</label>
         <input class="finput" type="tel" id="r-phone" placeholder="+7 777 000 00 00">
         <label class="flabel">Агентство</label>
